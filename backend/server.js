@@ -13,10 +13,10 @@ app.use(express.json());
 // Servir arquivos estáticos do frontend
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Configuração do PostgreSQL via variáveis de ambiente
+// Configuração do PostgreSQL via variáveis de ambiente (Render exige SSL)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.PGSSLMODE === 'require' ? { rejectUnauthorized: false } : false
+  ssl: { rejectUnauthorized: false }
 });
 
 const DATA_FILE = './confirmados.json';
