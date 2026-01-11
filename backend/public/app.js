@@ -64,11 +64,11 @@ document.getElementById('formConfirma').addEventListener('submit', function(e) {
 });
 // Função para sortear times equilibrando homens e mulheres
 function sortearTimes(confirmados) {
-  // Adiciona campo genero default masculino se não existir (retrocompatibilidade)
+  // Limita a 24 confirmados (4 times de 6)
+  confirmados = (confirmados || []).slice(0, 24);
   confirmados.forEach(c => { if (!c.genero) c.genero = 'masculino'; });
-  const homens = confirmados.filter(c => c.genero === 'masculino');
-  const mulheres = confirmados.filter(c => c.genero === 'feminino');
-  // Embaralha arrays
+  const homens = confirmados.filter(c => c.genero === 'masculino').slice();
+  const mulheres = confirmados.filter(c => c.genero === 'feminino').slice();
   function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -77,19 +77,25 @@ function sortearTimes(confirmados) {
   }
   shuffle(homens);
   shuffle(mulheres);
-  // 4 times de 6
+
+  // Intercala gêneros tentando equilibrar; quando um gênero acabar, o outro completa
+  const combined = [];
+  while (homens.length || mulheres.length) {
+    if (homens.length >= mulheres.length) {
+      if (homens.length) combined.push(homens.pop());
+      if (mulheres.length) combined.push(mulheres.pop());
+    } else {
+      if (mulheres.length) combined.push(mulheres.pop());
+      if (homens.length) combined.push(homens.pop());
+    }
+  }
+
   const times = [[], [], [], []];
-  // Distribui mulheres
-  for (let i = 0; i < 4 * 3; i++) {
-    const idx = i % 4;
-    if (mulheres.length > 0) times[idx].push(mulheres.pop());
+  for (let i = 0; i < combined.length; i++) {
+    times[i % 4].push(combined[i]);
   }
-  // Distribui homens
-  for (let i = 0; i < 4 * 3; i++) {
-    const idx = i % 4;
-    if (homens.length > 0) times[idx].push(homens.pop());
-  }
-  // Preenche vagas livres
+
+  // Preenche vagas livres até 6 por time
   for (let i = 0; i < 4; i++) {
     while (times[i].length < 6) {
       times[i].push({ nome: 'Vaga Livre', genero: '', tipo: '' });
@@ -104,7 +110,8 @@ document.getElementById('sortearTimes').addEventListener('click', function(e) {
   fetch(`/confirmados`)
     .then(res => res.json())
     .then(confirmados => {
-      const times = sortearTimes(confirmados);
+      const list = Array.isArray(confirmados) ? confirmados : (confirmados.confirmed || []);
+      const times = sortearTimes(list);
       let html = '';
       for (let i = 0; i < 4; i++) {
         html += `<b>Time ${i + 1}</b><ul>`;
