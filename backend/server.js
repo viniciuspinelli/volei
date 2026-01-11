@@ -61,6 +61,12 @@ app.post('/confirmar', async (req, res) => {
     if (existe.rowCount > 0) {
       return res.status(409).json({ erro: 'Nome já confirmado.' });
     }
+    // Verifica se já atingiu o limite de 24 confirmados
+    const cnt = await pool.query('SELECT COUNT(*) FROM confirmados');
+    const confirmedCount = parseInt(cnt.rows[0].count, 10);
+    if (confirmedCount >= 24) {
+      return res.status(403).json({ erro: 'Limite de 24 confirmados atingido.' });
+    }
     // Insere e retorna timestamp
     const insert = await pool.query('INSERT INTO confirmados (nome, tipo, genero) VALUES ($1, $2, $3) RETURNING data, id', [nome, tipo, genero]);
     const insertedAt = insert.rows[0].data;
