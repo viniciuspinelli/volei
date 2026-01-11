@@ -23,9 +23,9 @@ function atualizarLista() {
           if (c.tipo === 'avulso') li.classList.add('tipo-avulso');
           const span = document.createElement('span');
           span.textContent = `${i + 1}. ${c.nome} (${c.tipo})`;
-          span.style.color = c.tipo === 'avulso' ? '#ffd54f' : '#ffffff';
+          span.style.color = c.tipo === 'avulso' ? '#ffd54f' : '#eaf6ff';
           const btn = document.createElement('button');
-          btn.className = 'btn btn-sm btn-outline-light ms-2';
+          btn.className = 'remove-btn';
           btn.textContent = 'Remover';
           btn.addEventListener('click', () => removerConfirmado(c.id));
           li.appendChild(span);

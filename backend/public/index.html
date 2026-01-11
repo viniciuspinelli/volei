@@ -6,7 +6,7 @@
   <title>Confirmação Vôlei Sexta</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
-    :root{--bg:#071226;--card:rgba(255,255,255,0.04);--muted:#9fb3c8;--accent1:#7dd3fc;--accent2:#a78bfa;--avulso:#ffd54f}
+    :root{--bg:#071226;--card:rgba(255,255,255,0.04);--muted:#9fb3c8;--accent1:#7dd3fc;--accent2:#a78bfa;--avulso:#ffd54f;--ok1:#34d399;--ok2:#10b981;--danger:#ef4444}
     *{box-sizing:border-box}
     body{font-family:Inter,system-ui,Arial,sans-serif;background:linear-gradient(180deg,#020617 0%, #071226 50%);color:#e7f3ff;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
     .container{width:100%;max-width:520px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));backdrop-filter:blur(6px);border-radius:12px;padding:20px 20px 28px;box-shadow:0 8px 24px rgba(2,6,23,0.7);border:1px solid rgba(255,255,255,0.04)}
@@ -19,7 +19,10 @@
     input,select,button{height:48px;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit;font-size:15px}
     select{appearance:none;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);padding-right:28px}
     .controls{display:flex;gap:8px;flex-wrap:wrap}
-    button.primary{background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#031022;border:none;font-weight:600;padding:12px 16px}
+    button.primary{background:linear-gradient(90deg,var(--ok1),var(--ok2));color:#031022;border:none;font-weight:600;padding:12px 16px}
+    .remove-btn{background:var(--danger);color:#fff;border:none;padding:8px 14px;border-radius:8px;margin-left:8px;}
+    .remove-btn:hover{filter:brightness(0.95);}
+    #listaConfirmados li span{color:#eaf6ff;}
     button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);padding:10px 14px}
     .lista{margin-top:18px;display:flex;flex-direction:column;gap:12px}
     .col{width:100%}
@@ -33,6 +36,8 @@
     #listaConfirmados li.tipo-avulso{background:linear-gradient(90deg, rgba(255,213,79,0.04), transparent);border-left:4px solid rgba(255,213,79,0.12)}
     #listaConfirmados li.tipo-avulso span.name{color:var(--avulso)}
     .small-btn{padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--muted);cursor:pointer}
+    .remove-btn{background:var(--danger);color:#fff;border:none}
+    .remove-btn:hover{filter:brightness(0.95)}
     #resultadoSorteio{color:#eaf6ff;margin-top:12px}
     @media(max-width:560px){.container{padding:14px}.small-btn{padding:8px 10px}}
   </style>
