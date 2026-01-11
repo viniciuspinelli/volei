@@ -1,12 +1,3 @@
-// Rota para limpar todos os confirmados
-app.delete('/confirmados', async (req, res) => {
-  try {
-    await pool.query('DELETE FROM confirmados');
-    res.json({ sucesso: true });
-  } catch (err) {
-    res.status(500).json({ erro: 'Erro ao limpar confirmados.' });
-  }
-});
 const express = require('express');
 const fs = require('fs');
 
@@ -30,7 +21,6 @@ const pool = new Pool({
 
 const DATA_FILE = './confirmados.json';
 
-
 // Criação da tabela se não existir
 async function criarTabela() {
   await pool.query(`
@@ -43,6 +33,15 @@ async function criarTabela() {
   `);
 }
 criarTabela();
+// Rota para limpar todos os confirmados
+app.delete('/confirmados', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM confirmados');
+    res.json({ sucesso: true });
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao limpar confirmados.' });
+  }
+});
 
 // Rota para registrar presença
 app.post('/confirmar', async (req, res) => {
