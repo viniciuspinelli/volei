@@ -17,11 +17,11 @@ function atualizarLista() {
 
       const ul = document.getElementById('listaConfirmados');
       ul.innerHTML = '';
-        confirmed.forEach(c => {
+        confirmed.forEach((c, i) => {
           const li = document.createElement('li');
           li.className = 'd-flex align-items-center justify-content-between';
           const span = document.createElement('span');
-          span.textContent = `${c.nome} (${c.tipo})`;
+          span.textContent = `${i + 1}. ${c.nome} (${c.tipo})`;
           span.style.color = '#ffffff';
           const btn = document.createElement('button');
           btn.className = 'btn btn-sm btn-outline-light ms-2';

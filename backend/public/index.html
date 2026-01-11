@@ -10,6 +10,9 @@
     h1 { text-align: center; color: #ff7a18; margin-bottom: 8px }
     form { display: flex; flex-direction: column; gap: 12px; }
     input, select, button { padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); color: #fff }
+    /* Force dark background for native dropdowns/options on many platforms */
+    select { background-color: #0b2540; color: #fff }
+    select option { background-color: #0b2540; color: #fff }
     button { background: #ff7a18; color: #fff; border: none; cursor: pointer; font-weight: bold; }
     button:hover { background: #c25512; }
     .lista { margin-top: 20px; }
