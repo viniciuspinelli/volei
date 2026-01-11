@@ -150,8 +150,34 @@ document.getElementById('sortearTimes').addEventListener('click', function(e) {
         html += '</ul>';
       }
       document.getElementById('resultadoSorteio').innerHTML = html;
+      
+      // Botão de compartilhar no WhatsApp
+      let shareBtn = document.getElementById('shareWhatsAppBtn');
+      if (!shareBtn) {
+        shareBtn = document.createElement('button');
+        shareBtn.id = 'shareWhatsAppBtn';
+        shareBtn.className = 'primary';
+        shareBtn.textContent = 'Compartilhar no WhatsApp';
+        shareBtn.style.marginTop = '12px';
+        shareBtn.addEventListener('click', () => compartilharWhatsApp(times));
+        document.getElementById('resultadoSorteio').appendChild(shareBtn);
+      }
     });
 });
+
+function compartilharWhatsApp(times) {
+  let mensagem = '*🏐 SORTEIO DOS TIMES - VÔLEI SEXTA 🏐*%0A%0A';
+  for (let i = 0; i < 4; i++) {
+    mensagem += `*Time ${i + 1}*%0A`;
+    times[i].forEach(p => {
+      mensagem += `• ${p.nome}${p.genero ? ' (' + p.genero + ')' : ''}%0A`;
+    });
+    mensagem += '%0A';
+  }
+  const numero = '5511986439388';
+  const url = `https://wa.me/${numero}?text=${mensagem}`;
+  window.open(url, '_blank');
+}
 
 
 // Botão para limpar confirmados
