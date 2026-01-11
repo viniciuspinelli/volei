@@ -10,6 +10,8 @@ COPY backend/package*.json ./
 COPY backend/server.js ./
 COPY backend/confirmados.json ./
 COPY backend/public ./public
+# Copia a pasta frontend (se estiver presente) para permitir que o container sirva arquivos diretamente dela
+COPY frontend ./frontend
 
 
 # Instala dependências

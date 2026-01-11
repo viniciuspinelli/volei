@@ -10,8 +10,17 @@ const PORT = 3001;
 app.use(cors());
 app.use(express.json());
 
-// Servir arquivos estáticos do frontend
-app.use(express.static(path.join(__dirname, 'public')));
+// Servir arquivos estáticos do frontend.
+// Se a pasta `frontend` existir (workspace), serve ela — isso mantém frontend e backend sincronizados.
+const frontendPath = path.join(__dirname, '..', 'frontend');
+const publicPath = path.join(__dirname, 'public');
+if (fs.existsSync(frontendPath)) {
+  app.use(express.static(frontendPath));
+  console.log('Servindo frontend de', frontendPath);
+} else {
+  app.use(express.static(publicPath));
+  console.log('Servindo frontend de', publicPath);
+}
 
 // Configuração do PostgreSQL via variáveis de ambiente (Render exige SSL)
 const pool = new Pool({
