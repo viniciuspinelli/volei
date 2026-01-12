@@ -110,6 +110,46 @@ app.delete('/confirmados/:id', async (req, res) => {
   }
 });
 
+// Rota para retornar estatísticas de frequência
+app.get('/estatisticas', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        nome, 
+        genero, 
+        tipo,
+        COUNT(*) as total_confirmacoes,
+        MAX(data) as ultima_confirmacao
+      FROM confirmados
+      GROUP BY nome, genero, tipo
+      ORDER BY total_confirmacoes DESC
+    `);
+    const stats = result.rows;
+    
+    // Calcula estatísticas gerais
+    const totalConfirmacoes = stats.reduce((sum, s) => sum + parseInt(s.total_confirmacoes, 10), 0);
+    const pessoasUnicas = stats.length;
+    const mediaConfirmacoes = pessoasUnicas > 0 ? (totalConfirmacoes / pessoasUnicas).toFixed(2) : 0;
+    
+    // Estatísticas por gênero
+    const porGenero = {};
+    stats.forEach(s => {
+      if (!porGenero[s.genero]) porGenero[s.genero] = { total: 0, pessoas: 0 };
+      porGenero[s.genero].total += parseInt(s.total_confirmacoes, 10);
+      porGenero[s.genero].pessoas += 1;
+    });
+    
+    res.json({ 
+      ranking: stats,
+      resumo: { totalConfirmacoes, pessoasUnicas, mediaConfirmacoes },
+      porGenero 
+    });
+  } catch (err) {
+    console.error('Erro /estatisticas:', err);
+    res.status(500).json({ erro: 'Erro ao buscar estatísticas.' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });

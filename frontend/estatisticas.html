@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estatísticas - Pagou-Jogou Volei Clube</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #071226 0%, #0a1f3a 100%);
+      color: #eaf6ff;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid rgba(52, 211, 153, 0.3);
+    }
+    .logo-section {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .logo {
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #34d399, #10b981);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 700;
+      color: #071226;
+    }
+    h1 {
+      font-size: 28px;
+      color: #34d399;
+    }
+    .nav-links {
+      display: flex;
+      gap: 15px;
+    }
+    .nav-links a {
+      color: #eaf6ff;
+      text-decoration: none;
+      padding: 10px 15px;
+      border-radius: 6px;
+      transition: background 0.3s;
+    }
+    .nav-links a:hover {
+      background: rgba(52, 211, 153, 0.2);
+    }
+    .nav-links a.active {
+      background: linear-gradient(90deg, #34d399, #10b981);
+      color: #071226;
+      font-weight: 600;
+    }
+    .resumo-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    .card {
+      background: rgba(11, 37, 64, 0.6);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid rgba(52, 211, 153, 0.2);
+    }
+    .card-title {
+      font-size: 14px;
+      color: #a0d8c5;
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .card-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #34d399;
+    }
+    .filtros {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .filtro-btn {
+      padding: 8px 16px;
+      border: 1px solid rgba(52, 211, 153, 0.3);
+      background: transparent;
+      color: #eaf6ff;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'Inter', sans-serif;
+    }
+    .filtro-btn:hover {
+      background: rgba(52, 211, 153, 0.1);
+    }
+    .filtro-btn.active {
+      background: linear-gradient(90deg, #34d399, #10b981);
+      color: #071226;
+      border-color: #34d399;
+    }
+    .ranking-section {
+      margin-top: 30px;
+    }
+    .ranking-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 15px;
+      color: #34d399;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: rgba(11, 37, 64, 0.6);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(52, 211, 153, 0.2);
+    }
+    thead {
+      background: rgba(52, 211, 153, 0.1);
+      border-bottom: 1px solid rgba(52, 211, 153, 0.2);
+    }
+    th {
+      padding: 15px;
+      text-align: left;
+      font-weight: 600;
+      color: #34d399;
+      font-size: 13px;
+      text-transform: uppercase;
+    }
+    td {
+      padding: 12px 15px;
+      border-bottom: 1px solid rgba(52, 211, 153, 0.1);
+      color: #eaf6ff;
+    }
+    tr:hover {
+      background: rgba(52, 211, 153, 0.05);
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge-mensalista {
+      background: #3b82f6;
+      color: #fff;
+    }
+    .badge-avulso {
+      background: #ffd54f;
+      color: #000;
+    }
+    .badge-feminino {
+      background: rgba(236, 100, 155, 0.3);
+      color: #ff6b9d;
+    }
+    .badge-masculino {
+      background: rgba(59, 130, 246, 0.3);
+      color: #60a5fa;
+    }
+    .ranking-position {
+      font-size: 16px;
+      font-weight: 700;
+      color: #34d399;
+      width: 30px;
+    }
+    .ranking-position.top1 { color: #fbbf24; }
+    .ranking-position.top2 { color: #d1d5db; }
+    .ranking-position.top3 { color: #f97316; }
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #a0d8c5;
+    }
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo-section">
+        <div class="logo">⚡</div>
+        <div>
+          <h1>Estatísticas</h1>
+          <p style="font-size: 12px; color: #a0d8c5;">Ranking de Frequência</p>
+        </div>
+      </div>
+      <nav class="nav-links">
+        <a href="index.html">Voltar</a>
+        <a href="#" onclick="ativarModoTeste(event)" style="background: rgba(255, 213, 79, 0.2); color: #ffd54f; display: none;" id="btnModoTeste">🧪 Teste</a>
+      </nav>
+    </header>
+
+    <div class="resumo-section" id="resumoSection">
+      <div class="card">
+        <div class="card-title">Total de Confirmações</div>
+        <div class="card-value" id="totalConfirmacoes">0</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Pessoas Únicas</div>
+        <div class="card-value" id="pessoasUnicas">0</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Média por Pessoa</div>
+        <div class="card-value" id="mediaConfirmacoes">0</div>
+      </div>
+    </div>
+
+    <div class="ranking-section">
+      <div class="filtros">
+        <button class="filtro-btn active" onclick="filtrarPor('todos')">Todos</button>
+        <button class="filtro-btn" onclick="filtrarPor('feminino')">👩 Feminino</button>
+        <button class="filtro-btn" onclick="filtrarPor('masculino')">👨 Masculino</button>
+        <button class="filtro-btn" onclick="filtrarPor('mensalista')">🎟️ Mensalista</button>
+        <button class="filtro-btn" onclick="filtrarPor('avulso')">💵 Avulso</button>
+      </div>
+
+      <div class="ranking-title">Ranking de Frequência</div>
+      
+      <table id="rankingTable">
+        <thead>
+          <tr>
+            <th style="width: 40px;">#</th>
+            <th>Nome</th>
+            <th>Tipo</th>
+            <th>Gênero</th>
+            <th style="text-align: right;">Vezes</th>
+            <th style="text-align: right;">Última</th>
+          </tr>
+        </thead>
+        <tbody id="rankingBody">
+          <tr>
+            <td colspan="6" class="empty-state">
+              <div class="empty-state-icon">📊</div>
+              <p>Carregando estatísticas...</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    let statsData = null;
+    let filtroAtual = 'todos';
+    let modoTeste = false;
+
+    // Dados de teste
+    const nomesFemininos = [
+      'Ana', 'Bruna', 'Carla', 'Diana', 'Estela', 'Fernanda', 'Gabriela', 'Helena'
+    ];
+    const nomesMasculinos = [
+      'André', 'Bruno', 'Carlos', 'Daniel', 'Eduardo', 'Felipe', 'Gabriel', 'Henry',
+      'Igor', 'João', 'Kevin', 'Lucas', 'Marcos', 'Neto', 'Otávio', 'Pedro'
+    ];
+    const tipos = ['mensalista', 'avulso'];
+
+    function gerarDadosTeste() {
+      const mapa = {};
+      
+      nomesFemininos.forEach(nome => {
+        const freq = Math.floor(Math.random() * 15) + 1;
+        const tipo = tipos[Math.floor(Math.random() * tipos.length)];
+        const dias = Math.floor(Math.random() * 120);
+        const data = new Date();
+        data.setDate(data.getDate() - dias);
+        mapa[nome] = { nome, genero: 'feminino', tipo, total_confirmacoes: freq, ultima_confirmacao: data.toISOString() };
+      });
+      
+      nomesMasculinos.forEach(nome => {
+        const freq = Math.floor(Math.random() * 20) + 1;
+        const tipo = tipos[Math.floor(Math.random() * tipos.length)];
+        const dias = Math.floor(Math.random() * 120);
+        const data = new Date();
+        data.setDate(data.getDate() - dias);
+        mapa[nome] = { nome, genero: 'masculino', tipo, total_confirmacoes: freq, ultima_confirmacao: data.toISOString() };
+      });
+      
+      const ranking = Object.values(mapa).sort((a, b) => b.total_confirmacoes - a.total_confirmacoes);
+      const total = ranking.reduce((sum, r) => sum + r.total_confirmacoes, 0);
+      const porGenero = {};
+      ranking.forEach(r => {
+        if (!porGenero[r.genero]) porGenero[r.genero] = { total: 0, pessoas: 0 };
+        porGenero[r.genero].total += r.total_confirmacoes;
+        porGenero[r.genero].pessoas += 1;
+      });
+      
+      return {
+        ranking,
+        resumo: { totalConfirmacoes: total, pessoasUnicas: ranking.length, mediaConfirmacoes: (total / ranking.length).toFixed(2) },
+        porGenero
+      };
+    }
+
+    function ativarModoTeste(e) {
+      e.preventDefault();
+      modoTeste = true;
+      document.getElementById('btnModoTeste').style.display = 'none';
+      document.getElementById('rankingBody').innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px; color: #ffd54f;"><strong>🧪 MODO TESTE ATIVADO</strong></td></tr>';
+      statsData = gerarDadosTeste();
+      atualizarResumo();
+      renderizarRanking();
+    }
+
+    async function carregarEstatisticas() {
+      try {
+        const res = await fetch('/estatisticas');
+        statsData = await res.json();
+        atualizarResumo();
+        renderizarRanking();
+      } catch (err) {
+        console.error('Erro ao carregar estatísticas:', err);
+        document.getElementById('rankingBody').innerHTML = `
+          <tr>
+            <td colspan="6" class="empty-state">
+              <div class="empty-state-icon">❌</div>
+              <p>Erro ao carregar dados</p>
+              <p style="font-size: 12px; margin-top: 10px;">Dados reais não disponíveis. <a href="#" onclick="ativarModoTeste(event)" style="color: #34d399;">Use modo de teste</a> para visualizar exemplo.</p>
+            </td>
+          </tr>
+        `;
+        document.getElementById('btnModoTeste').style.display = 'block';
+      }
+    }
+
+    function atualizarResumo() {
+      const { totalConfirmacoes, pessoasUnicas, mediaConfirmacoes } = statsData.resumo;
+      document.getElementById('totalConfirmacoes').textContent = totalConfirmacoes;
+      document.getElementById('pessoasUnicas').textContent = pessoasUnicas;
+      document.getElementById('mediaConfirmacoes').textContent = mediaConfirmacoes;
+    }
+
+    function renderizarRanking() {
+      let dados = statsData.ranking;
+
+      if (filtroAtual === 'feminino') {
+        dados = dados.filter(d => d.genero === 'feminino');
+      } else if (filtroAtual === 'masculino') {
+        dados = dados.filter(d => d.genero === 'masculino');
+      } else if (filtroAtual === 'mensalista') {
+        dados = dados.filter(d => d.tipo === 'mensalista');
+      } else if (filtroAtual === 'avulso') {
+        dados = dados.filter(d => d.tipo === 'avulso');
+      }
+
+      const tbody = document.getElementById('rankingBody');
+      
+      if (dados.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="empty-state">
+              <div class="empty-state-icon">📭</div>
+              <p>Nenhum dado para este filtro</p>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = dados.map((d, idx) => {
+        const posicao = idx + 1;
+        const dataObj = new Date(d.ultima_confirmacao);
+        const dataFormatada = dataObj.toLocaleDateString('pt-BR');
+        
+        let posicaoClass = '';
+        if (posicao === 1) posicaoClass = 'top1';
+        else if (posicao === 2) posicaoClass = 'top2';
+        else if (posicao === 3) posicaoClass = 'top3';
+
+        return `
+          <tr>
+            <td class="ranking-position ${posicaoClass}">🏆 ${posicao}</td>
+            <td><strong>${d.nome}</strong></td>
+            <td>
+              <span class="badge ${d.tipo === 'avulso' ? 'badge-avulso' : 'badge-mensalista'}">
+                ${d.tipo}
+              </span>
+            </td>
+            <td>
+              <span class="badge badge-${d.genero}">
+                ${d.genero}
+              </span>
+            </td>
+            <td style="text-align: right; font-weight: 700; color: #34d399;">${d.total_confirmacoes}</td>
+            <td style="text-align: right; font-size: 12px; color: #a0d8c5;">${dataFormatada}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filtrarPor(filtro) {
+      filtroAtual = filtro;
+      
+      document.querySelectorAll('.filtro-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event.target.classList.add('active');
+
+      renderizarRanking();
+    }
+
+    carregarEstatisticas();
+    setInterval(carregarEstatisticas, 10000);
+  </script>
+</body>
+</html>
