@@ -193,5 +193,27 @@ document.getElementById('limparConfirmados').addEventListener('click', function(
   }
 });
 
+// Botão para limpar apenas o sorteio
+document.addEventListener('DOMContentLoaded', function() {
+  let limparSorteioBtn = document.createElement('button');
+  limparSorteioBtn.id = 'limparSorteio';
+  limparSorteioBtn.className = 'ghost';
+  limparSorteioBtn.textContent = 'Limpar Sorteio';
+  limparSorteioBtn.style.marginTop = '12px';
+  limparSorteioBtn.addEventListener('click', function() {
+    document.getElementById('resultadoSorteio').innerHTML = '';
+    document.getElementById('mensagem').textContent = 'Sorteio limpo!';
+    document.getElementById('mensagem').style.color = '#27ae60';
+  });
+  
+  // Adiciona o botão logo após o elemento resultadoSorteio (após o sorteio ser realizado)
+  const observer = new MutationObserver(() => {
+    if (document.getElementById('resultadoSorteio').innerHTML && !document.getElementById('limparSorteio')) {
+      document.getElementById('resultadoSorteio').parentNode.insertBefore(limparSorteioBtn, document.getElementById('resultadoSorteio').nextSibling);
+    }
+  });
+  observer.observe(document.getElementById('resultadoSorteio'), { childList: true });
+});
+
 // Inicializa lista ao carregar
 atualizarLista();
