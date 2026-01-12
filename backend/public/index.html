@@ -11,7 +11,10 @@
     body{font-family:Inter,system-ui,Arial,sans-serif;background:linear-gradient(180deg,#020617 0%, #071226 50%);color:#e7f3ff;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
     .container{width:100%;max-width:520px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));backdrop-filter:blur(6px);border-radius:12px;padding:20px 20px 28px;box-shadow:0 8px 24px rgba(2,6,23,0.7);border:1px solid rgba(255,255,255,0.04)}
     header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
-    .logo{width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,var(--accent1),var(--accent2));display:flex;align-items:center;justify-content:center;color:#012; font-weight:700}
+    .logo-brand{display:flex;align-items:baseline;gap:4px;font-weight:700;letter-spacing:2px;font-size:20px}
+    .logo-brand .part1{color:#eaf6ff}
+    .logo-brand .part2{color:var(--ok1)}
+    .logo-brand .part3{color:#eaf6ff;font-size:12px;font-weight:600;letter-spacing:1px}
     h1{font-size:18px;margin:0;color:#eaf6ff;letter-spacing:0.2px}
     .subtitle{color:var(--muted);font-size:13px;margin-top:4px}
     form{display:grid;grid-template-columns:1fr;gap:10px;margin-top:6px}
@@ -48,10 +51,16 @@
 </head>
 <body>
   <div class="container">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-      <h1>Pagou-Jogou Volei Clube</h1>
-      <a href="estatisticas.html" style="padding: 8px 12px; background: rgba(52, 211, 153, 0.2); border: 1px solid rgba(52, 211, 153, 0.3); border-radius: 6px; color: #34d399; text-decoration: none; font-size: 13px; font-weight: 600; transition: all 0.3s;" onmouseover="this.style.background='rgba(52, 211, 153, 0.3)'" onmouseout="this.style.background='rgba(52, 211, 153, 0.2)'">📊 Estatísticas</a>
-    </div>
+    <header style="flex-direction: column; align-items: flex-start; gap: 16px; margin-bottom: 20px; position: relative;">
+      <div class="logo-brand">
+        <span class="part1">PAGOU</span>
+        <span class="part2">JOGOU</span>
+        <span class="part3">VOLEI</span>
+      </div>
+      <div style="position: absolute; top: 0; right: 0;">
+        <a href="estatisticas.html" style="padding: 8px 12px; background: rgba(52, 211, 153, 0.2); border: 1px solid rgba(52, 211, 153, 0.3); border-radius: 6px; color: #34d399; text-decoration: none; font-size: 13px; font-weight: 600; transition: all 0.3s;" onmouseover="this.style.background='rgba(52, 211, 153, 0.3)'" onmouseout="this.style.background='rgba(52, 211, 153, 0.2)'">📊 Estatísticas</a>
+      </div>
+    </header>
     <div class="mensagem" id="mensagem"></div>
     <form id="formConfirma">
       <input type="text" id="nome" placeholder="Seu nome" required />
