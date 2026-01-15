@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Remover Testes - Vôlei</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: #1a1a1a;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #2a2a2a;
+      padding: 30px;
+      border-radius: 8px;
+    }
+    h1 {
+      margin-bottom: 20px;
+      color: #FF6B6B;
+    }
+    .button {
+      background: #FF6B6B;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      width: 100%;
+      transition: background 0.3s;
+    }
+    .button:hover {
+      background: #FF5252;
+    }
+    .button:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+    .output {
+      background: #1a1a1a;
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 20px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .success {
+      color: #4CAF50;
+    }
+    .error {
+      color: #FF6B6B;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🗑️ Remover Registros de Teste</h1>
+    <p>Clique no botão abaixo para remover os 6 registros de teste (teste1 a teste6)</p>
+    
+    <button class="button" onclick="removerTestes()" id="btn">Remover Testes</button>
+    
+    <div class="output" id="output"></div>
+  </div>
+
+  <script>
+    async function removerTestes() {
+      const btn = document.getElementById('btn');
+      const output = document.getElementById('output');
+      
+      btn.disabled = true;
+      output.innerHTML = '<p>⏳ Processando...</p>';
+      
+      try {
+        const nomes = ['teste1', 'teste2', 'teste3', 'teste4', 'teste5', 'teste6'];
+        let removidos = 0;
+        let erros = [];
+        
+        output.innerHTML = '<p class="success">⏳ Removendo registros...</p>';
+        
+        for (const nome of nomes) {
+          try {
+            // Primeiro obter todos os confirmados
+            const response = await fetch('/confirmados');
+            const dados = await response.json();
+            
+            // Encontrar a pessoa
+            const pessoa = dados.confirmed?.find(p => p.nome.toLowerCase() === nome.toLowerCase()) ||
+                          dados.waitlist?.find(p => p.nome.toLowerCase() === nome.toLowerCase());
+            
+            if (pessoa) {
+              const deleteRes = await fetch(`/confirmados/${pessoa.id}`, { method: 'DELETE' });
+              if (deleteRes.ok) {
+                removidos++;
+                output.innerHTML += `<p class="success">✓ ${nome} removido</p>`;
+              } else {
+                erros.push(nome);
+              }
+            } else {
+              output.innerHTML += `<p class="error">✗ ${nome} não encontrado</p>`;
+            }
+          } catch (e) {
+            erros.push(nome);
+          }
+        }
+        
+        output.innerHTML += `<p class="success"><br>✓ ${removidos} registros removidos com sucesso!</p>`;
+      } catch (error) {
+        output.innerHTML = `<p class="error">✗ Erro: ${error.message}</p>`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
