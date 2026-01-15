@@ -113,6 +113,16 @@
       text-align: center;
     }
     
+    .sidebar-admin {
+      border-top: 1px solid rgba(255,255,255,0.05);
+      padding-top: var(--spacing-md);
+      margin-top: auto;
+    }
+    
+    .nav-item.admin-logged {
+      color: var(--accent);
+    }
+    
     /* ====== CONTEÚDO PRINCIPAL ====== */
     .main-content {
       flex: 1;
@@ -653,6 +663,17 @@
           <span>Estatísticas</span>
         </button>
       </nav>
+      
+      <div class="sidebar-admin">
+        <button class="nav-item" id="btnAdminSidebar" onclick="abrirLogin()">
+          <span class="icon">🔐</span>
+          <span>Admin</span>
+        </button>
+        <button class="nav-item admin-logged" id="btnLogoutSidebar" onclick="fazerLogout()" style="display:none;">
+          <span class="icon">🚪</span>
+          <span>Sair</span>
+        </button>
+      </div>
     </aside>
     
     <!-- Conteúdo Principal -->
@@ -706,16 +727,8 @@
       <!-- Página: Sorteio -->
       <section id="page-sorteio" class="page">
         <div class="page-header">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-            <div>
-              <h1 class="page-title">Sorteio de Times</h1>
-              <p class="page-subtitle">Distribua os jogadores em times equilibrados</p>
-            </div>
-            <div class="adminControlsSorteio">
-              <button class="btn btn-secondary" id="btnLoginSorteio" onclick="abrirLogin()">🔐 Admin</button>
-              <button class="btn btn-danger" id="btnLogoutSorteio" onclick="fazerLogout()" style="display:none;">Sair</button>
-            </div>
-          </div>
+          <h1 class="page-title">Sorteio de Times</h1>
+          <p class="page-subtitle">Distribua os jogadores em times equilibrados</p>
         </div>
         
         <div class="card">
@@ -735,16 +748,8 @@
       <!-- Página: Estatísticas -->
       <section id="page-estatisticas" class="page">
         <div class="page-header">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-            <div>
-              <h1 class="page-title">Estatísticas</h1>
-              <p class="page-subtitle">Acompanhe as presenças ao longo do tempo</p>
-            </div>
-            <div id="adminControls">
-              <button class="btn btn-secondary" id="btnLogin" onclick="abrirLogin()">🔐 Admin</button>
-              <button class="btn btn-danger" id="btnLogout" onclick="fazerLogout()" style="display:none;">Sair</button>
-            </div>
-          </div>
+          <h1 class="page-title">Estatísticas</h1>
+          <p class="page-subtitle">Acompanhe as presenças ao longo do tempo</p>
         </div>
         
         <div class="stats-grid">
@@ -799,6 +804,14 @@
         <button class="bottom-nav-item" data-page="estatisticas">
           <span class="icon">📊</span>
           <span>Estatísticas</span>
+        </button>
+        <button class="bottom-nav-item" id="btnAdminMobile" onclick="abrirLogin()">
+          <span class="icon">🔐</span>
+          <span>Admin</span>
+        </button>
+        <button class="bottom-nav-item admin-logged" id="btnLogoutMobile" onclick="fazerLogout()" style="display:none;">
+          <span class="icon">🚪</span>
+          <span>Sair</span>
         </button>
       </div>
     </nav>
@@ -1152,12 +1165,12 @@
     }
     
     function atualizarUIAdmin() {
-      // Estatísticas
-      document.getElementById('btnLogin').style.display = isAdmin ? 'none' : 'inline-block';
-      document.getElementById('btnLogout').style.display = isAdmin ? 'inline-block' : 'none';
-      // Sorteio
-      document.getElementById('btnLoginSorteio').style.display = isAdmin ? 'none' : 'inline-block';
-      document.getElementById('btnLogoutSorteio').style.display = isAdmin ? 'inline-block' : 'none';
+      // Sidebar (desktop)
+      document.getElementById('btnAdminSidebar').style.display = isAdmin ? 'none' : 'flex';
+      document.getElementById('btnLogoutSidebar').style.display = isAdmin ? 'flex' : 'none';
+      // Bottom nav (mobile)
+      document.getElementById('btnAdminMobile').style.display = isAdmin ? 'none' : 'flex';
+      document.getElementById('btnLogoutMobile').style.display = isAdmin ? 'flex' : 'none';
       // Re-renderizar times se existir sorteio ativo
       if (window.ultimoSorteio) {
         renderizarTimes();
