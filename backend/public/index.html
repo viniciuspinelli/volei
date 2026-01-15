@@ -384,6 +384,41 @@
       gap: 8px;
     }
     
+    /* Drag and Drop para Admin */
+    .time-card li.draggable {
+      cursor: grab;
+      padding: 8px 10px;
+      margin: 4px 0;
+      background: rgba(255,255,255,0.03);
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+    .time-card li.draggable:hover {
+      background: rgba(255, 107, 0, 0.1);
+      border-color: rgba(255, 107, 0, 0.3);
+    }
+    .time-card li.dragging {
+      opacity: 0.5;
+      cursor: grabbing;
+    }
+    .time-card li.drag-over {
+      border-color: var(--accent);
+      background: rgba(255, 107, 0, 0.2);
+    }
+    .time-card ul.drag-target {
+      min-height: 100px;
+    }
+    .admin-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 12px;
+      padding: 8px;
+      background: rgba(255, 107, 0, 0.1);
+      border-radius: var(--radius-sm);
+    }
+    
     .btn-whatsapp {
       background: rgba(37, 211, 102, 0.15);
       border: 1px solid rgba(37, 211, 102, 0.3);
@@ -919,6 +954,87 @@
       return times;
     }
     
+    function renderizarTimes() {
+      if (!window.ultimoSorteio) return;
+      const times = window.ultimoSorteio;
+      const canDrag = isAdmin;
+      
+      let html = '<div class="card"><h3 class="card-title">🏐 Times Sorteados</h3>';
+      if (canDrag) {
+        html += '<div class="admin-hint">✨ Arraste os jogadores para trocar de time</div>';
+      }
+      html += '<div class="times-grid">';
+      
+      for (let i = 0; i < 4; i++) {
+        html += `<div class="time-card" data-time="${i}"><h4>Time ${i + 1}</h4><ul class="${canDrag ? 'drag-target' : ''}" data-time="${i}">`;
+        times[i].forEach((p, j) => {
+          const badge = p.genero ? `<span class="badge badge-${p.genero}">${p.genero === 'masculino' ? '♂' : '♀'}</span>` : '';
+          if (canDrag && p.nome !== 'Vaga Livre') {
+            html += `<li class="draggable" draggable="true" data-time="${i}" data-index="${j}">${p.nome} ${badge}</li>`;
+          } else {
+            html += `<li>${p.nome} ${badge}</li>`;
+          }
+        });
+        html += '</ul></div>';
+      }
+      html += '</div>';
+      html += '<button class="btn btn-whatsapp btn-block" style="margin-top:16px" onclick="compartilharWhatsApp()">📱 Compartilhar no WhatsApp</button>';
+      html += '</div>';
+      
+      document.getElementById('resultadoSorteio').innerHTML = html;
+      
+      if (canDrag) {
+        initDragAndDrop();
+      }
+    }
+    
+    function initDragAndDrop() {
+      let draggedItem = null;
+      let draggedFromTime = null;
+      let draggedIndex = null;
+      
+      document.querySelectorAll('.draggable').forEach(item => {
+        item.addEventListener('dragstart', function(e) {
+          draggedItem = this;
+          draggedFromTime = parseInt(this.dataset.time);
+          draggedIndex = parseInt(this.dataset.index);
+          this.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+        });
+        
+        item.addEventListener('dragend', function() {
+          this.classList.remove('dragging');
+          document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+        });
+        
+        item.addEventListener('dragover', function(e) {
+          e.preventDefault();
+          if (this !== draggedItem) {
+            this.classList.add('drag-over');
+          }
+        });
+        
+        item.addEventListener('dragleave', function() {
+          this.classList.remove('drag-over');
+        });
+        
+        item.addEventListener('drop', function(e) {
+          e.preventDefault();
+          if (this === draggedItem) return;
+          
+          const targetTime = parseInt(this.dataset.time);
+          const targetIndex = parseInt(this.dataset.index);
+          
+          // Trocar jogadores
+          const temp = window.ultimoSorteio[draggedFromTime][draggedIndex];
+          window.ultimoSorteio[draggedFromTime][draggedIndex] = window.ultimoSorteio[targetTime][targetIndex];
+          window.ultimoSorteio[targetTime][targetIndex] = temp;
+          
+          renderizarTimes();
+        });
+      });
+    }
+    
     document.getElementById('sortearTimes').addEventListener('click', function() {
       fetch('/confirmados')
         .then(res => res.json())
@@ -926,22 +1042,9 @@
           const list = Array.isArray(data) ? data : (data.confirmed || []);
           const times = sortearTimes(list);
           
-          let html = '<div class="card"><h3 class="card-title">🏐 Times Sorteados</h3><div class="times-grid">';
-          for (let i = 0; i < 4; i++) {
-            html += `<div class="time-card"><h4>Time ${i + 1}</h4><ul>`;
-            times[i].forEach(p => {
-              const badge = p.genero ? `<span class="badge badge-${p.genero}">${p.genero === 'masculino' ? '♂' : '♀'}</span>` : '';
-              html += `<li>${p.nome} ${badge}</li>`;
-            });
-            html += '</ul></div>';
-          }
-          html += '</div>';
-          html += '<button class="btn btn-whatsapp btn-block" style="margin-top:16px" onclick="compartilharWhatsApp()">📱 Compartilhar no WhatsApp</button>';
-          html += '</div>';
-          
-          document.getElementById('resultadoSorteio').innerHTML = html;
-          document.getElementById('limparSorteio').style.display = 'inline-block';
           window.ultimoSorteio = times;
+          document.getElementById('limparSorteio').style.display = 'inline-block';
+          renderizarTimes();
         });
     });
     
