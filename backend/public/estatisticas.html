@@ -247,6 +247,7 @@
             <th>Gênero</th>
             <th style="text-align: right;">Vezes</th>
             <th style="text-align: right;">Última</th>
+            <th style="width: 50px;"></th>
           </tr>
         </thead>
         <tbody id="rankingBody">
@@ -369,7 +370,7 @@
       if (dados.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="6" class="empty-state">
+            <td colspan="7" class="empty-state">
               <div class="empty-state-icon">📭</div>
               <p>Nenhum dado para este filtro</p>
             </td>
@@ -404,6 +405,9 @@
             </td>
             <td style="text-align: right; font-weight: 700; color: #34d399;">${d.total_confirmacoes}</td>
             <td style="text-align: right; font-size: 12px; color: #a0d8c5;">${dataFormatada}</td>
+            <td style="text-align: center;">
+              <button onclick="removerUsuario('${d.nome.replace(/'/g, "\\'")}')" style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); color: #ef4444; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;" title="Remover ${d.nome}">✕</button>
+            </td>
           </tr>
         `;
       }).join('');
@@ -418,6 +422,25 @@
       event.target.classList.add('active');
 
       renderizarRanking();
+    }
+
+    async function removerUsuario(nome) {
+      if (!confirm(`Tem certeza que deseja remover "${nome}" das estatísticas?\n\nIsso removerá TODAS as confirmações deste usuário.`)) {
+        return;
+      }
+      try {
+        const res = await fetch('/estatisticas/' + encodeURIComponent(nome), { method: 'DELETE' });
+        const data = await res.json();
+        if (data.sucesso) {
+          alert(`Usuário "${nome}" removido com sucesso! (${data.removidos} confirmações removidas)`);
+          carregarEstatisticas();
+        } else {
+          alert('Erro: ' + (data.erro || 'Não foi possível remover.'));
+        }
+      } catch (err) {
+        alert('Erro ao remover usuário.');
+        console.error(err);
+      }
     }
 
     carregarEstatisticas();

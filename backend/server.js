@@ -112,6 +112,21 @@ app.delete('/confirmados/:id', async (req, res) => {
   }
 });
 
+// Rota para remover todas as confirmações de um usuário por nome
+app.delete('/estatisticas/:nome', async (req, res) => {
+  const nome = decodeURIComponent(req.params.nome);
+  try {
+    const del = await pool.query('DELETE FROM confirmados WHERE LOWER(nome) = LOWER($1)', [nome]);
+    if (del.rowCount === 0) {
+      return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    }
+    res.json({ sucesso: true, removidos: del.rowCount });
+  } catch (err) {
+    console.error('Erro DELETE /estatisticas/:nome', err);
+    res.status(500).json({ erro: 'Erro ao remover usuário das estatísticas.' });
+  }
+});
+
 // Rota para retornar estatísticas de frequência
 app.get('/estatisticas', async (req, res) => {
   try {

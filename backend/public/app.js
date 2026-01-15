@@ -79,9 +79,6 @@ document.getElementById('formConfirma').addEventListener('submit', function(e) {
   const nome = document.getElementById('nome').value.trim();
   const tipo = document.getElementById('tipo').value;
   const genero = document.getElementById('genero').value;
-  // Checkbox "É um usuário de teste?" (id="teste")
-  const testeEl = document.getElementById('teste');
-  const teste = (testeEl && testeEl.checked) ? true : false;
   const mensagem = document.getElementById('mensagem');
   mensagem.textContent = '';
   mensagem.style.color = '#27ae60';
@@ -89,8 +86,7 @@ document.getElementById('formConfirma').addEventListener('submit', function(e) {
   fetch(`/confirmar`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    // Envia a flag correta para o backend
-    body: JSON.stringify({ nome, tipo, genero, teste })
+    body: JSON.stringify({ nome, tipo, genero })
   })
     .then(async res => {
       const data = await res.json().catch(() => ({ erro: 'Resposta inválida do servidor.' }));
