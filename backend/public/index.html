@@ -550,6 +550,45 @@
       }
     }
     
+    /* ====== MODAL LOGIN ====== */
+    .login-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-modal.ativo { display: flex; }
+    .login-box {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 30px;
+      max-width: 350px;
+      width: 90%;
+      border: 1px solid rgba(255, 107, 0, 0.3);
+    }
+    .login-box h3 {
+      color: var(--accent);
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .login-box input {
+      width: 100%;
+      margin-bottom: 12px;
+    }
+    .login-erro {
+      color: var(--danger);
+      font-size: 13px;
+      margin-bottom: 12px;
+      text-align: center;
+      display: none;
+    }
+    
     /* ====== LAB BADGE ====== */
     .lab-indicator {
       display: none;
@@ -650,8 +689,16 @@
       <!-- Página: Estatísticas -->
       <section id="page-estatisticas" class="page">
         <div class="page-header">
-          <h1 class="page-title">Estatísticas</h1>
-          <p class="page-subtitle">Acompanhe as presenças ao longo do tempo</p>
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+            <div>
+              <h1 class="page-title">Estatísticas</h1>
+              <p class="page-subtitle">Acompanhe as presenças ao longo do tempo</p>
+            </div>
+            <div id="adminControls">
+              <button class="btn btn-secondary" id="btnLogin" onclick="abrirLogin()">🔐 Admin</button>
+              <button class="btn btn-danger" id="btnLogout" onclick="fazerLogout()" style="display:none;">Sair</button>
+            </div>
+          </div>
         </div>
         
         <div class="stats-grid">
@@ -679,6 +726,18 @@
         </div>
       </section>
     </main>
+    
+    <!-- Modal de Login Admin -->
+    <div class="login-modal" id="loginModal">
+      <div class="login-box">
+        <h3>🔐 Login Admin</h3>
+        <div class="login-erro" id="loginErro"></div>
+        <input type="text" id="loginUsuario" placeholder="Usuário">
+        <input type="password" id="loginSenha" placeholder="Senha">
+        <button class="btn btn-primary btn-block" onclick="fazerLogin()">Entrar</button>
+        <button class="btn btn-secondary btn-block" onclick="fecharLogin()" style="margin-top:8px;">Cancelar</button>
+      </div>
+    </div>
     
     <!-- Bottom Nav Mobile -->
     <nav class="bottom-nav">
@@ -909,6 +968,102 @@
       }
     });
     
+    // ====== SISTEMA ADMIN ======
+    let adminToken = null;
+    let isAdmin = false;
+    
+    function abrirLogin() {
+      document.getElementById('loginModal').classList.add('ativo');
+      document.getElementById('loginUsuario').focus();
+    }
+    
+    function fecharLogin() {
+      document.getElementById('loginModal').classList.remove('ativo');
+      document.getElementById('loginUsuario').value = '';
+      document.getElementById('loginSenha').value = '';
+      document.getElementById('loginErro').style.display = 'none';
+    }
+    
+    async function fazerLogin() {
+      const usuario = document.getElementById('loginUsuario').value;
+      const senha = document.getElementById('loginSenha').value;
+      
+      try {
+        const res = await fetch('/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usuario, senha })
+        });
+        const data = await res.json();
+        
+        if (data.sucesso) {
+          adminToken = data.token;
+          isAdmin = true;
+          fecharLogin();
+          atualizarUIAdmin();
+          carregarEstatisticas();
+          mostrarMensagem('Login realizado com sucesso!', 'sucesso');
+        } else {
+          document.getElementById('loginErro').textContent = data.erro || 'Credenciais inválidas';
+          document.getElementById('loginErro').style.display = 'block';
+        }
+      } catch (err) {
+        document.getElementById('loginErro').textContent = 'Erro de conexão';
+        document.getElementById('loginErro').style.display = 'block';
+      }
+    }
+    
+    async function fazerLogout() {
+      if (adminToken) {
+        try {
+          await fetch('/logout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: adminToken })
+          });
+        } catch (e) {}
+      }
+      adminToken = null;
+      isAdmin = false;
+      atualizarUIAdmin();
+      carregarEstatisticas();
+      mostrarMensagem('Logout realizado', 'sucesso');
+    }
+    
+    function atualizarUIAdmin() {
+      document.getElementById('btnLogin').style.display = isAdmin ? 'none' : 'inline-block';
+      document.getElementById('btnLogout').style.display = isAdmin ? 'inline-block' : 'none';
+    }
+    
+    async function removerUsuarioEstatisticas(nome) {
+      if (!isAdmin || !adminToken) {
+        mostrarMensagem('Você precisa estar logado como admin', 'erro');
+        return;
+      }
+      
+      if (!confirm(`Remover "${nome}" das estatísticas? Esta ação não pode ser desfeita!`)) return;
+      
+      try {
+        const res = await fetch(`/estatisticas/${encodeURIComponent(nome)}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${adminToken}`
+          }
+        });
+        const data = await res.json();
+        
+        if (data.sucesso) {
+          mostrarMensagem(`"${nome}" removido das estatísticas`, 'sucesso');
+          carregarEstatisticas();
+        } else {
+          mostrarMensagem(data.erro || 'Erro ao remover', 'erro');
+        }
+      } catch (err) {
+        mostrarMensagem('Erro de conexão', 'erro');
+      }
+    }
+    
     // ====== ESTATÍSTICAS ======
     function carregarEstatisticas() {
       fetch('/estatisticas')
@@ -916,7 +1071,7 @@
         .then(data => {
           const ranking = data.ranking || [];
           
-          const total = ranking.reduce((sum, r) => sum + r.total, 0);
+          const total = ranking.reduce((sum, r) => sum + (r.total_confirmacoes || 0), 0);
           const mensalistas = ranking.filter(r => r.tipo === 'mensalista').length;
           const avulsos = ranking.filter(r => r.tipo === 'avulso').length;
           
@@ -928,15 +1083,22 @@
           const ul = document.getElementById('rankingList');
           ul.innerHTML = '';
           
-          ranking.slice(0, 10).forEach((r, i) => {
+          ranking.forEach((r, i) => {
             const li = document.createElement('li');
             li.className = 'ranking-item';
+            
+            const presencas = r.total_confirmacoes || 0;
+            const deleteBtn = isAdmin ? `<button class="btn-remove" onclick="removerUsuarioEstatisticas('${r.nome.replace(/'/g, "\\'")}')" title="Remover">✕</button>` : '';
+            
             li.innerHTML = `
               <div style="display:flex;align-items:center">
                 <span class="pos ${i < 3 ? 'top-3' : ''}">${i + 1}</span>
                 <span>${r.nome}</span>
               </div>
-              <span class="count">${r.total} presenças</span>
+              <div style="display:flex;align-items:center;gap:12px;">
+                <span class="count">${presencas} presenças</span>
+                ${deleteBtn}
+              </div>
             `;
             ul.appendChild(li);
           });
@@ -946,6 +1108,7 @@
     
     // ====== INIT ======
     atualizarLista();
+    atualizarUIAdmin();
   </script>
 </body>
 </html>
