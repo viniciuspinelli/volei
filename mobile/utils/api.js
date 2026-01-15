@@ -3,7 +3,7 @@
 // Em desenvolvimento local, use: http://seu-ip-local:3001
 // No Render ou servidor remoto: https://seu-app.onrender.com
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.15.200:3001';
 
 export const api = {
   async confirmarPresenca(nome, tipo, genero) {

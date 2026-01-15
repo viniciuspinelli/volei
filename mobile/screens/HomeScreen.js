@@ -7,8 +7,8 @@ import {
   Text,
   StyleSheet,
   Alert,
+  Picker,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 import { api } from '../utils/api';
 
 export default function HomeScreen() {

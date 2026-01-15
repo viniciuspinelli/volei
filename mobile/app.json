@@ -3,6 +3,7 @@
     "name": "Vôlei Sexta",
     "slug": "volei-sexta",
     "version": "1.0.0",
+    "runtimeVersion": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -15,8 +16,10 @@
       "**/*"
     ],
     "ios": {
-      "supportsTabletMode": true,
-      "bundleIdentifier": "com.viniciuspinelli.volei"
+      "bundleIdentifier": "com.viniciuspinelli.volei",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -27,6 +30,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "583ce497-c34d-4f68-9f8f-fd9d3c85aa48"
+      }
     }
   }
 }

@@ -1,4 +1,4 @@
-import React, { useState, useFocusEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   ScrollView,
@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../utils/api';
 
 export default function ListaScreen({ navigation }) {
@@ -18,7 +19,7 @@ export default function ListaScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
 
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
       carregarConfirmados();
     }, [])
   );

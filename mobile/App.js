@@ -1,12 +1,36 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { StyleSheet } from 'react-native';
-import HomeScreen from './screens/HomeScreen';
-import SorteioScreen from './screens/SorteioScreen';
-import ListaScreen from './screens/ListaScreen';
+import { View, Text, StyleSheet } from 'react-native';
 
 const Tab = createBottomTabNavigator();
+
+function HomeScreen() {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>📝 Confirmar Presença</Text>
+      <Text style={styles.text}>Em desenvolvimento...</Text>
+    </View>
+  );
+}
+
+function ListaScreen() {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>📋 Lista de Confirmados</Text>
+      <Text style={styles.text}>Em desenvolvimento...</Text>
+    </View>
+  );
+}
+
+function SorteioScreen() {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>🎲 Sorteio dos Times</Text>
+      <Text style={styles.text}>Em desenvolvimento...</Text>
+    </View>
+  );
+}
 
 export default function App() {
   return (
@@ -32,7 +56,7 @@ export default function App() {
           name="Home"
           component={HomeScreen}
           options={{
-            title: 'Confirmar Presença',
+            title: 'Confirmar',
             tabBarLabel: 'Confirmar',
           }}
         />
@@ -40,7 +64,7 @@ export default function App() {
           name="Lista"
           component={ListaScreen}
           options={{
-            title: 'Lista de Confirmados',
+            title: 'Lista',
             tabBarLabel: 'Lista',
           }}
         />
@@ -48,7 +72,7 @@ export default function App() {
           name="Sorteio"
           component={SorteioScreen}
           options={{
-            title: 'Sorteio dos Times',
+            title: 'Sorteio',
             tabBarLabel: 'Sorteio',
           }}
         />
@@ -60,8 +84,19 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
+    backgroundColor: '#1a1a1a',
     justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  title: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  text: {
+    color: '#aaa',
+    fontSize: 16,
   },
 });
