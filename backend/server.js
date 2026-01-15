@@ -123,6 +123,7 @@ app.get('/estatisticas', async (req, res) => {
         COUNT(*) as total_confirmacoes,
         MAX(data) as ultima_confirmacao
       FROM confirmados
+      WHERE teste = false
       GROUP BY nome, genero, tipo
       ORDER BY total_confirmacoes DESC
     `);

@@ -2,7 +2,11 @@ const API_URL = '';
 
 function atualizarLista() {
   fetch(`/confirmados`)
-    .then(res => res.json())
+    .then(async res => {
+      const data = await res.json().catch(() => ({ confirmed: [], waitlist: [], erro: 'Resposta inválida do servidor.' }));
+      if (!res.ok) throw new Error(data && data.erro ? data.erro : 'Erro ao carregar lista.');
+      return data;
+    })
     .then(data => {
       // data may be { confirmed, waitlist } or an array (legacy)
       let confirmed = [];
@@ -42,6 +46,11 @@ function atualizarLista() {
         waitHtml += '</ol></div>';
       }
       waitEl.innerHTML = waitHtml;
+    })
+    .catch(err => {
+      const mensagem = document.getElementById('mensagem');
+      mensagem.textContent = err && err.message ? err.message : 'Erro ao carregar lista.';
+      mensagem.style.color = '#c0392b';
     });
 }
 
@@ -70,7 +79,9 @@ document.getElementById('formConfirma').addEventListener('submit', function(e) {
   const nome = document.getElementById('nome').value.trim();
   const tipo = document.getElementById('tipo').value;
   const genero = document.getElementById('genero').value;
-  const isTeste = document.getElementById('isTeste').checked;
+  // Checkbox "É um usuário de teste?" (id="teste")
+  const testeEl = document.getElementById('teste');
+  const teste = (testeEl && testeEl.checked) ? true : false;
   const mensagem = document.getElementById('mensagem');
   mensagem.textContent = '';
   mensagem.style.color = '#27ae60';
@@ -78,18 +89,22 @@ document.getElementById('formConfirma').addEventListener('submit', function(e) {
   fetch(`/confirmar`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ nome, tipo, genero, isTeste })
+    // Envia a flag correta para o backend
+    body: JSON.stringify({ nome, tipo, genero, teste })
   })
-    .then(res => res.json())
+    .then(async res => {
+      const data = await res.json().catch(() => ({ erro: 'Resposta inválida do servidor.' }));
+      if (!res.ok) throw new Error(data && data.erro ? data.erro : 'Erro ao confirmar.');
+      return data;
+    })
     .then(data => {
-      if (data.sucesso) {
-        mensagem.textContent = 'Presença confirmada!';
-        atualizarLista();
-        document.getElementById('formConfirma').reset();
-      } else if (data.erro) {
-        mensagem.textContent = data.erro;
-        mensagem.style.color = '#c0392b';
-      }
+      mensagem.textContent = 'Presença confirmada!';
+      atualizarLista();
+      document.getElementById('formConfirma').reset();
+    })
+    .catch(err => {
+      mensagem.textContent = err && err.message ? err.message : 'Erro ao confirmar.';
+      mensagem.style.color = '#c0392b';
     });
 });
 // Função para sortear times equilibrando homens e mulheres
