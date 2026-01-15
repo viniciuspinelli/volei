@@ -93,11 +93,18 @@ document.getElementById('formConfirma').addEventListener('submit', function(e) {
 });
 // Função para sortear times equilibrando homens e mulheres
 function sortearTimes(confirmados) {
-  // Limita a 24 confirmados (4 times de 6)
-  confirmados = (confirmados || []).slice(0, 24);
+  // Usa todos os confirmados disponíveis
+  confirmados = (confirmados || []).slice();
   confirmados.forEach(c => { if (!c.genero) c.genero = 'masculino'; });
+  
+  const totalPessoas = confirmados.length;
+  const NUM_TIMES = 4;
+  const pessoasPorTime = Math.floor(totalPessoas / NUM_TIMES);
+  const timesComUmaExtraPessoa = totalPessoas % NUM_TIMES;
+  
   const homens = confirmados.filter(c => c.genero === 'masculino').slice();
   const mulheres = confirmados.filter(c => c.genero === 'feminino').slice();
+  
   function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -107,32 +114,34 @@ function sortearTimes(confirmados) {
   shuffle(homens);
   shuffle(mulheres);
 
-  // 4 times de 6
+  // 4 times com distribuição dinâmica
   const times = [[], [], [], []];
   
   // Distribui mulheres primeiro - uma por time (garante que cada time tenha mulher)
-  for (let i = 0; i < Math.min(4, mulheres.length); i++) {
+  for (let i = 0; i < Math.min(NUM_TIMES, mulheres.length); i++) {
     times[i].push(mulheres[i]);
   }
   
   // Distribui mulheres restantes entre os times
-  for (let i = 4; i < mulheres.length; i++) {
-    const idx = i % 4;
+  for (let i = NUM_TIMES; i < mulheres.length; i++) {
+    const idx = i % NUM_TIMES;
     times[idx].push(mulheres[i]);
   }
   
   // Distribui homens entre os times
   for (let i = 0; i < homens.length; i++) {
-    const idx = i % 4;
+    const idx = i % NUM_TIMES;
     times[idx].push(homens[i]);
   }
 
-  // Preenche vagas livres até 6 por time
-  for (let i = 0; i < 4; i++) {
-    while (times[i].length < 6) {
+  // Preenche vagas livres apenas se não houver pessoas suficientes
+  for (let i = 0; i < NUM_TIMES; i++) {
+    const tamanhoEsperado = pessoasPorTime + (i < timesComUmaExtraPessoa ? 1 : 0);
+    while (times[i].length < tamanhoEsperado) {
       times[i].push({ nome: 'Vaga Livre', genero: '', tipo: '' });
     }
   }
+  
   return times;
 }
 

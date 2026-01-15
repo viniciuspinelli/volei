@@ -93,10 +93,18 @@ document.getElementById('formConfirma').addEventListener('submit', function(e) {
 });
 // Função para sortear times equilibrando homens e mulheres
 function sortearTimes(confirmados) {
-  confirmados = (confirmados || []).slice(0, 24);
+  // Usa todos os confirmados disponíveis
+  confirmados = (confirmados || []).slice();
   confirmados.forEach(c => { if (!c.genero) c.genero = 'masculino'; });
+  
+  const totalPessoas = confirmados.length;
+  const NUM_TIMES = 4;
+  const pessoasPorTime = Math.floor(totalPessoas / NUM_TIMES);
+  const timesComUmaExtraPessoa = totalPessoas % NUM_TIMES;
+  
   const homens = confirmados.filter(c => c.genero === 'masculino').slice();
   const mulheres = confirmados.filter(c => c.genero === 'feminino').slice();
+  
   function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -106,7 +114,7 @@ function sortearTimes(confirmados) {
   shuffle(homens);
   shuffle(mulheres);
 
-  // 4 times de 6
+  // 4 times com distribuição dinâmica
   const times = [[], [], [], []];
   
   // Distribui mulheres primeiro - uma por time (garante que cada time tenha mulher)
@@ -126,12 +134,14 @@ function sortearTimes(confirmados) {
     times[idx].push(homens[i]);
   }
 
-  // Preenche vagas livres até 6 por time
+  // Preenche vagas livres apenas se não houver pessoas suficientes
   for (let i = 0; i < 4; i++) {
-    while (times[i].length < 6) {
+    const tamanhoEsperado = pessoasPorTime + (i < timesComUmaExtraPessoa ? 1 : 0);
+    while (times[i].length < tamanhoEsperado) {
       times[i].push({ nome: 'Vaga Livre', genero: '', tipo: '' });
     }
   }
+  
   return times;
 }
 
