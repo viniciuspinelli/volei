@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🧪 Lab UI - Pagou-Jogou Volei</title>
-  <meta name="robots" content="noindex, nofollow">
+  <title>Pagou-Jogou Volei Clube</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -553,164 +552,11 @@
     
     /* ====== LAB BADGE ====== */
     .lab-indicator {
-      position: fixed;
-      top: var(--spacing-md);
-      right: var(--spacing-md);
-      padding: 6px 12px;
-      background: rgba(251, 191, 36, 0.2);
-      border: 1px solid rgba(251, 191, 36, 0.3);
-      border-radius: var(--radius-sm);
-      color: #fbbf24;
-      font-size: 11px;
-      font-weight: 600;
-      z-index: 1001;
-    }
-    
-    /* ====== TELA DE LOGIN ====== */
-    .login-screen {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: var(--bg-primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 2000;
-    }
-    .login-screen.hidden { display: none; }
-    
-    .login-container {
-      text-align: center;
-      max-width: 400px;
-      padding: var(--spacing-xl);
-    }
-    
-    .login-logo {
-      font-size: 64px;
-      margin-bottom: var(--spacing-lg);
-    }
-    
-    .login-title {
-      font-size: 28px;
-      font-weight: 700;
-      margin-bottom: var(--spacing-sm);
-    }
-    
-    .login-title .part1 { color: var(--text-primary); }
-    .login-title .part2 { color: var(--accent); }
-    
-    .login-subtitle {
-      color: var(--text-muted);
-      margin-bottom: var(--spacing-xl);
-    }
-    
-    .btn-steam {
-      display: inline-flex;
-      align-items: center;
-      gap: 12px;
-      padding: 14px 28px;
-      background: linear-gradient(135deg, #1b2838 0%, #2a475e 100%);
-      border: 1px solid #66c0f4;
-      border-radius: var(--radius-md);
-      color: #c7d5e0;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-    
-    .btn-steam:hover {
-      background: linear-gradient(135deg, #2a475e 0%, #3d6a8a 100%);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 20px rgba(102, 192, 244, 0.3);
-    }
-    
-    .btn-steam svg {
-      width: 24px;
-      height: 24px;
-    }
-    
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-md);
-      padding: var(--spacing-md);
-      background: rgba(255,255,255,0.03);
-      border-radius: var(--radius-md);
-      margin-top: auto;
-    }
-    
-    .user-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: var(--accent);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-    }
-    
-    .user-name {
-      flex: 1;
-      text-align: left;
-    }
-    
-    .user-name strong {
-      display: block;
-      font-size: 14px;
-    }
-    
-    .user-name small {
-      color: var(--text-muted);
-      font-size: 12px;
-    }
-    
-    .btn-logout {
-      padding: 8px 12px;
-      background: transparent;
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: var(--radius-sm);
-      color: var(--text-muted);
-      font-size: 12px;
-      cursor: pointer;
-    }
-    
-    .btn-logout:hover {
-      background: rgba(239, 68, 68, 0.1);
-      border-color: var(--danger);
-      color: var(--danger);
+      display: none;
     }
   </style>
 </head>
 <body>
-  <!-- Tela de Login Steam -->
-  <div class="login-screen" id="loginScreen">
-    <div class="login-container">
-      <div class="login-logo">🏐</div>
-      <h1 class="login-title">
-        <span class="part1">PAGOU</span>
-        <span class="part2">JOGOU</span>
-      </h1>
-      <p class="login-subtitle">Faça login para confirmar sua presença</p>
-      
-      <button class="btn-steam" onclick="loginSteam()">
-        <svg viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2C6.48 2 2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3l-.5 3H13v6.95c5.05-.5 9-4.76 9-9.95 0-5.52-4.48-10-10-10z"/>
-        </svg>
-        <span>Entrar com Steam</span>
-      </button>
-      
-      <p style="margin-top: 24px; font-size: 12px; color: var(--text-muted);">
-        🧪 Ambiente de testes - Autenticação simulada
-      </p>
-    </div>
-  </div>
-  
-  <div class="lab-indicator">🧪 LAB</div>
-  
   <div class="app-container">
     <!-- Sidebar Desktop -->
     <aside class="sidebar">
@@ -733,15 +579,6 @@
           <span>Estatísticas</span>
         </button>
       </nav>
-      
-      <div class="user-info" id="userInfo">
-        <div class="user-avatar" id="userAvatar">👤</div>
-        <div class="user-name">
-          <strong id="userName">Usuário</strong>
-          <small>via Steam</small>
-        </div>
-        <button class="btn-logout" onclick="logoutSteam()">Sair</button>
-      </div>
     </aside>
     
     <!-- Conteúdo Principal -->
@@ -863,75 +700,6 @@
   </div>
 
   <script>
-    // ====== AUTENTICAÇÃO STEAM (SIMULADA) ======
-    let steamUser = null;
-    
-    function checkAuth() {
-      const savedUser = localStorage.getItem('steamUser');
-      if (savedUser) {
-        steamUser = JSON.parse(savedUser);
-        showApp();
-      } else {
-        showLogin();
-      }
-    }
-    
-    function showLogin() {
-      document.getElementById('loginScreen').classList.remove('hidden');
-      document.querySelector('.app-container').style.display = 'none';
-    }
-    
-    function showApp() {
-      document.getElementById('loginScreen').classList.add('hidden');
-      document.querySelector('.app-container').style.display = 'flex';
-      updateUserInfo();
-    }
-    
-    function updateUserInfo() {
-      if (steamUser) {
-        document.getElementById('userName').textContent = steamUser.name;
-        document.getElementById('userAvatar').textContent = steamUser.avatar || '👤';
-      }
-    }
-    
-    function loginSteam() {
-      // Simulação de login Steam - em produção seria redirecionado para Steam OpenID
-      const mockUsers = [
-        { id: '76561198012345678', name: 'PlayerOne', avatar: '👾' },
-        { id: '76561198087654321', name: 'GamerPro', avatar: '🎮' },
-        { id: '76561198011223344', name: 'VoleiMaster', avatar: '🏆' },
-      ];
-      
-      // Simula popup de login
-      const randomUser = mockUsers[Math.floor(Math.random() * mockUsers.length)];
-      
-      // Mostra "loading"
-      const btn = document.querySelector('.btn-steam');
-      const originalText = btn.innerHTML;
-      btn.innerHTML = '<span>Conectando...</span>';
-      btn.disabled = true;
-      
-      setTimeout(() => {
-        steamUser = randomUser;
-        localStorage.setItem('steamUser', JSON.stringify(steamUser));
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        showApp();
-        atualizarLista();
-      }, 1500);
-    }
-    
-    function logoutSteam() {
-      if (confirm('Deseja sair da sua conta Steam?')) {
-        steamUser = null;
-        localStorage.removeItem('steamUser');
-        showLogin();
-      }
-    }
-    
-    // Inicializa verificando autenticação
-    checkAuth();
-    
     // ====== NAVEGAÇÃO ======
     const navItems = document.querySelectorAll('[data-page]');
     const pages = document.querySelectorAll('.page');
