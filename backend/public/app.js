@@ -19,24 +19,52 @@ function atualizarLista() {
         waitlist = data.waitlist || [];
       }
 
+      // Atualiza contador
+      const contador = document.getElementById('contadorConfirmados');
+      if (contador) contador.textContent = confirmed.length;
+
       const ul = document.getElementById('listaConfirmados');
       ul.innerHTML = '';
       confirmed.forEach((c, i) => {
         const li = document.createElement('li');
-        li.className = 'd-flex align-items-center justify-content-between';
-        if (c.tipo === 'avulso') li.classList.add('tipo-avulso');
-        const span = document.createElement('span');
-        span.textContent = `${i + 1}. ${c.nome} (${c.tipo})`;
-        span.style.color = c.tipo === 'avulso' ? '#ffd54f' : '#eaf6ff';
+        li.className = 'lista-item';
+        if (c.tipo === 'avulso') li.classList.add('avulso');
+        
+        // Container de info com nome e badges
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'info';
+        
+        const nomeSpan = document.createElement('span');
+        nomeSpan.className = 'nome';
+        nomeSpan.textContent = `${i + 1}. ${c.nome}`;
+        infoDiv.appendChild(nomeSpan);
+        
+        // Badge de tipo (mensalista/avulso)
+        const tipoBadge = document.createElement('span');
+        tipoBadge.className = `badge badge-${c.tipo}`;
+        tipoBadge.textContent = c.tipo === 'mensalista' ? 'M' : 'A';
+        tipoBadge.title = c.tipo;
+        infoDiv.appendChild(tipoBadge);
+        
+        // Badge de gênero
+        if (c.genero) {
+          const generoBadge = document.createElement('span');
+          generoBadge.className = `badge badge-${c.genero}`;
+          generoBadge.textContent = c.genero === 'masculino' ? '♂' : '♀';
+          generoBadge.title = c.genero;
+          infoDiv.appendChild(generoBadge);
+        }
+        
+        li.appendChild(infoDiv);
+        
+        // Botão remover
         const btn = document.createElement('button');
-        btn.style.cssText = 'padding: 6px 10px; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; color: #ef4444; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s;';
+        btn.className = 'btn-remove';
         btn.textContent = '✕';
         btn.title = 'Remover ' + c.nome;
-        btn.addEventListener('mouseenter', () => btn.style.background = 'rgba(239, 68, 68, 0.3)');
-        btn.addEventListener('mouseleave', () => btn.style.background = 'rgba(239, 68, 68, 0.2)');
         btn.addEventListener('click', () => removerConfirmado(c.id));
-        li.appendChild(span);
         li.appendChild(btn);
+        
         ul.appendChild(li);
       });
 
@@ -44,7 +72,7 @@ function atualizarLista() {
       // use resultadoSorteio area for waitlist display when not showing teams
       let waitHtml = '';
       if (waitlist.length > 0) {
-        waitHtml += '<div class="mt-3"><strong>Lista de Espera</strong><ol class="ms-3 mt-2" style="color:#fff">';
+        waitHtml += '<div style="margin-top:16px;"><strong style="color:#eaf6ff;">Lista de Espera</strong><ol style="color:#9fb3c8; padding-left:20px; margin-top:8px;">';
         waitlist.forEach(w => { waitHtml += `<li>${w.nome} (${w.tipo})</li>` });
         waitHtml += '</ol></div>';
       }
@@ -53,7 +81,7 @@ function atualizarLista() {
     .catch(err => {
       const mensagem = document.getElementById('mensagem');
       mensagem.textContent = err && err.message ? err.message : 'Erro ao carregar lista.';
-      mensagem.style.color = '#c0392b';
+      mensagem.style.color = '#ef4444';
     });
 }
 
@@ -64,16 +92,16 @@ function removerConfirmado(id) {
     .then(data => {
       if (data.sucesso) {
         document.getElementById('mensagem').textContent = 'Confirmado removido.';
-        document.getElementById('mensagem').style.color = '#27ae60';
+        document.getElementById('mensagem').style.color = '#34d399';
         atualizarLista();
       } else if (data.erro) {
         document.getElementById('mensagem').textContent = data.erro;
-        document.getElementById('mensagem').style.color = '#c0392b';
+        document.getElementById('mensagem').style.color = '#ef4444';
       }
     })
     .catch(() => {
       document.getElementById('mensagem').textContent = 'Erro ao remover.';
-      document.getElementById('mensagem').style.color = '#c0392b';
+      document.getElementById('mensagem').style.color = '#ef4444';
     });
 }
 
@@ -84,7 +112,7 @@ document.getElementById('formConfirma').addEventListener('submit', function(e) {
   const genero = document.getElementById('genero').value;
   const mensagem = document.getElementById('mensagem');
   mensagem.textContent = '';
-  mensagem.style.color = '#27ae60';
+  mensagem.style.color = '#34d399';
   if (!nome || !tipo || !genero) return;
   fetch(`/confirmar`, {
     method: 'POST',
@@ -98,12 +126,13 @@ document.getElementById('formConfirma').addEventListener('submit', function(e) {
     })
     .then(data => {
       mensagem.textContent = 'Presença confirmada!';
+      mensagem.style.color = '#34d399';
       atualizarLista();
       document.getElementById('formConfirma').reset();
     })
     .catch(err => {
       mensagem.textContent = err && err.message ? err.message : 'Erro ao confirmar.';
-      mensagem.style.color = '#c0392b';
+      mensagem.style.color = '#ef4444';
     });
 });
 // Função para sortear times equilibrando homens e mulheres
@@ -168,14 +197,19 @@ document.getElementById('sortearTimes').addEventListener('click', function(e) {
     .then(confirmados => {
       const list = Array.isArray(confirmados) ? confirmados : (confirmados.confirmed || []);
       const times = sortearTimes(list);
-      let html = '';
+      
+      // Renderiza os times em grid
+      let html = '<div class="times-grid">';
       for (let i = 0; i < 4; i++) {
-        html += `<b>Time ${i + 1}</b><ul>`;
+        html += `<div class="time-card"><h4>Time ${i + 1}</h4><ul>`;
         times[i].forEach(p => {
-          html += `<li>${p.nome}${p.genero ? ' (' + p.genero + ')' : ''}</li>`;
+          const generoBadge = p.genero ? 
+            `<span class="badge badge-${p.genero}">${p.genero === 'masculino' ? '♂' : '♀'}</span>` : '';
+          html += `<li>${p.nome} ${generoBadge}</li>`;
         });
-        html += '</ul>';
+        html += '</ul></div>';
       }
+      html += '</div>';
       document.getElementById('resultadoSorteio').innerHTML = html;
       
       // Botão de compartilhar no WhatsApp
@@ -183,9 +217,8 @@ document.getElementById('sortearTimes').addEventListener('click', function(e) {
       if (!shareBtn) {
         shareBtn = document.createElement('button');
         shareBtn.id = 'shareWhatsAppBtn';
-        shareBtn.className = 'primary';
-        shareBtn.textContent = 'Compartilhar no WhatsApp';
-        shareBtn.style.marginTop = '12px';
+        shareBtn.className = 'btn btn-whatsapp';
+        shareBtn.textContent = '📱 Compartilhar no WhatsApp';
         shareBtn.addEventListener('click', () => compartilharWhatsApp(times));
         document.getElementById('resultadoSorteio').appendChild(shareBtn);
       }
@@ -216,11 +249,11 @@ document.getElementById('limparConfirmados').addEventListener('click', function(
       .then(data => {
         if (data.sucesso) {
           document.getElementById('mensagem').textContent = 'Lista limpa!';
-          document.getElementById('mensagem').style.color = '#27ae60';
+          document.getElementById('mensagem').style.color = '#34d399';
           atualizarLista();
         } else {
           document.getElementById('mensagem').textContent = 'Erro ao limpar lista.';
-          document.getElementById('mensagem').style.color = '#c0392b';
+          document.getElementById('mensagem').style.color = '#ef4444';
         }
       });
   }
@@ -230,13 +263,13 @@ document.getElementById('limparConfirmados').addEventListener('click', function(
 document.addEventListener('DOMContentLoaded', function() {
   let limparSorteioBtn = document.createElement('button');
   limparSorteioBtn.id = 'limparSorteio';
-  limparSorteioBtn.className = 'ghost';
+  limparSorteioBtn.className = 'btn btn-ghost';
   limparSorteioBtn.textContent = 'Limpar Sorteio';
   limparSorteioBtn.style.marginTop = '12px';
   limparSorteioBtn.addEventListener('click', function() {
     document.getElementById('resultadoSorteio').innerHTML = '';
     document.getElementById('mensagem').textContent = 'Sorteio limpo!';
-    document.getElementById('mensagem').style.color = '#27ae60';
+    document.getElementById('mensagem').style.color = '#34d399';
   });
   
   // Adiciona o botão logo após o elemento resultadoSorteio (após o sorteio ser realizado)
