@@ -42,7 +42,7 @@ app.delete('/confirmados', (req, res) => {
 
 // Rota para registrar presença
 app.post('/confirmar', (req, res) => {
-  const { nome, tipo, genero } = req.body;
+  const { nome, tipo, genero, teste = false } = req.body;
   
   if (!nome || !tipo || !genero) {
     return res.status(400).json({ erro: 'Nome, tipo e genero são obrigatórios.' });
@@ -56,8 +56,9 @@ app.post('/confirmar', (req, res) => {
       return res.status(409).json({ erro: 'Nome já confirmado.' });
     }
 
-    // Verifica limite de 24 confirmados
-    if (dados.length >= 24) {
+    // Verifica limite de 24 confirmados (não conta testes)
+    const naoTestes = dados.filter(d => !d.teste);
+    if (naoTestes.length >= 24 && !teste) {
       return res.status(403).json({ erro: 'Limite de 24 confirmados atingido.' });
     }
 
@@ -67,6 +68,7 @@ app.post('/confirmar', (req, res) => {
       nome,
       tipo,
       genero,
+      teste: teste || false,
       data: new Date().toISOString()
     };
 
@@ -84,8 +86,10 @@ app.post('/confirmar', (req, res) => {
 app.get('/confirmados', (req, res) => {
   try {
     let dados = lerDados();
-    const confirmed = dados.slice(0, 24);
-    const waitlist = dados.slice(24);
+    // Filtra apenas os que não são testes
+    const naoTestes = dados.filter(d => !d.teste);
+    const confirmed = naoTestes.slice(0, 24);
+    const waitlist = naoTestes.slice(24);
     res.json({ confirmed, waitlist });
   } catch (err) {
     console.error('Erro /confirmados:', err);

@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Alert,
   Picker,
+  Switch,
 } from 'react-native';
 import { api } from '../utils/api';
 
@@ -15,6 +16,7 @@ export default function HomeScreen() {
   const [nome, setNome] = useState('');
   const [tipo, setTipo] = useState('fixo');
   const [genero, setGenero] = useState('masculino');
+  const [isTeste, setIsTeste] = useState(false);
   const [loading, setLoading] = useState(false);
   const [mensagem, setMensagem] = useState('');
   const [mensagemCor, setMensagemCor] = useState('green');
@@ -29,12 +31,13 @@ export default function HomeScreen() {
     setMensagem('');
 
     try {
-      const result = await api.confirmarPresenca(nome.trim(), tipo, genero);
+      const result = await api.confirmarPresenca(nome.trim(), tipo, genero, isTeste);
       setMensagem('✓ Presença confirmada!');
       setMensagemCor('green');
       setNome('');
       setTipo('fixo');
       setGenero('masculino');
+      setIsTeste(false);
     } catch (error) {
       setMensagem(`✗ ${error.message}`);
       setMensagemCor('red');
@@ -80,6 +83,17 @@ export default function HomeScreen() {
             <Picker.Item label="Masculino" value="masculino" />
             <Picker.Item label="Feminino" value="feminino" />
           </Picker>
+        </View>
+
+        <View style={styles.switchContainer}>
+          <Text style={styles.label}>Marcar como teste</Text>
+          <Switch
+            value={isTeste}
+            onValueChange={setIsTeste}
+            disabled={loading}
+            trackColor={{ false: '#444', true: '#81C784' }}
+            thumbColor={isTeste ? '#4CAF50' : '#999'}
+          />
         </View>
 
         <TouchableOpacity
@@ -140,6 +154,18 @@ const styles = StyleSheet.create({
   picker: {
     color: '#fff',
     backgroundColor: '#333',
+  },
+  switchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: '#333',
+    borderColor: '#444',
+    borderWidth: 1,
+    borderRadius: 6,
   },
   button: {
     backgroundColor: '#4CAF50',

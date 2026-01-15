@@ -6,14 +6,14 @@
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.15.200:3001';
 
 export const api = {
-  async confirmarPresenca(nome, tipo, genero) {
+  async confirmarPresenca(nome, tipo, genero, isTeste = false) {
     try {
       const response = await fetch(`${API_URL}/confirmar`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ nome, tipo, genero }),
+        body: JSON.stringify({ nome, tipo, genero, teste: isTeste }),
       });
       const data = await response.json();
       if (!response.ok) {

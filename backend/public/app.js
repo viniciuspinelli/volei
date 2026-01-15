@@ -70,6 +70,7 @@ document.getElementById('formConfirma').addEventListener('submit', function(e) {
   const nome = document.getElementById('nome').value.trim();
   const tipo = document.getElementById('tipo').value;
   const genero = document.getElementById('genero').value;
+  const isTeste = document.getElementById('isTeste').checked;
   const mensagem = document.getElementById('mensagem');
   mensagem.textContent = '';
   mensagem.style.color = '#27ae60';
@@ -77,7 +78,7 @@ document.getElementById('formConfirma').addEventListener('submit', function(e) {
   fetch(`/confirmar`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ nome, tipo, genero })
+    body: JSON.stringify({ nome, tipo, genero, isTeste })
   })
     .then(res => res.json())
     .then(data => {

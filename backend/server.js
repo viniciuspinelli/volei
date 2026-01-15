@@ -21,7 +21,7 @@ const pool = new Pool({
 
 const DATA_FILE = './confirmados.json';
 
-// Criação/atualização da tabela se não existir (inclui genero)
+// Criação/atualização da tabela se não existir (inclui genero e teste)
 async function criarTabela() {
   try {
     await pool.query(`
@@ -30,10 +30,12 @@ async function criarTabela() {
         nome VARCHAR(100) NOT NULL,
         tipo VARCHAR(20) NOT NULL,
         genero VARCHAR(20),
+        teste BOOLEAN DEFAULT false,
         data TIMESTAMP NOT NULL DEFAULT NOW()
       )
     `);
     await pool.query("ALTER TABLE confirmados ADD COLUMN IF NOT EXISTS genero VARCHAR(20)");
+    await pool.query("ALTER TABLE confirmados ADD COLUMN IF NOT EXISTS teste BOOLEAN DEFAULT false");
   } catch (err) {
     console.error('Erro ao criar/atualizar tabela confirmados:', err);
   }
@@ -51,7 +53,7 @@ app.delete('/confirmados', async (req, res) => {
 
 // Rota para registrar presença
 app.post('/confirmar', async (req, res) => {
-  const { nome, tipo, genero } = req.body;
+  const { nome, tipo, genero, teste = false } = req.body;
   if (!nome || !tipo || !genero) {
     return res.status(400).json({ erro: 'Nome, tipo e genero são obrigatórios.' });
   }
@@ -61,14 +63,14 @@ app.post('/confirmar', async (req, res) => {
     if (existe.rowCount > 0) {
       return res.status(409).json({ erro: 'Nome já confirmado.' });
     }
-    // Verifica se já atingiu o limite de 24 confirmados
-    const cnt = await pool.query('SELECT COUNT(*) FROM confirmados');
+    // Verifica se já atingiu o limite de 24 confirmados (não conta testes)
+    const cnt = await pool.query('SELECT COUNT(*) FROM confirmados WHERE teste = false');
     const confirmedCount = parseInt(cnt.rows[0].count, 10);
-    if (confirmedCount >= 24) {
+    if (confirmedCount >= 24 && !teste) {
       return res.status(403).json({ erro: 'Limite de 24 confirmados atingido.' });
     }
     // Insere e retorna timestamp
-    const insert = await pool.query('INSERT INTO confirmados (nome, tipo, genero) VALUES ($1, $2, $3) RETURNING data, id', [nome, tipo, genero]);
+    const insert = await pool.query('INSERT INTO confirmados (nome, tipo, genero, teste) VALUES ($1, $2, $3, $4) RETURNING data, id', [nome, tipo, genero, teste]);
     const insertedAt = insert.rows[0].data;
     // Calcula posição na lista (ordem por data asc)
     const posRes = await pool.query('SELECT COUNT(*) FROM confirmados WHERE data <= $1', [insertedAt]);
@@ -84,7 +86,7 @@ app.post('/confirmar', async (req, res) => {
 // Rota para listar confirmados
 app.get('/confirmados', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, nome, tipo, genero, data FROM confirmados ORDER BY data ASC');
+    const result = await pool.query('SELECT id, nome, tipo, genero, teste, data FROM confirmados WHERE teste = false ORDER BY data ASC');
     const rows = result.rows;
     const confirmed = rows.slice(0, 24);
     const waitlist = rows.slice(24);
