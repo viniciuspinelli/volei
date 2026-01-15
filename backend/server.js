@@ -11,8 +11,8 @@ const { Pool } = require('pg');
 const app = express();
 const PORT = 3001;
 
-// URL base do app (para callback do Steam)
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3001';
+// URL base do app (para callback do Steam) - remove barra final se existir
+const BASE_URL = (process.env.BASE_URL || 'http://localhost:3001').replace(/\/+$/, '');
 
 app.use(cors());
 app.use(express.json());
