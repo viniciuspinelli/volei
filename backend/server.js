@@ -1,322 +1,302 @@
 const express = require('express');
-const fs = require('fs');
-const crypto = require('crypto');
-// Removed Steam/passport session dependencies
-
-const cors = require('cors');
-const path = require('path');
 const { Pool } = require('pg');
-const { exec } = require('child_process');
+const cors = require('cors');
+const bcrypt = require('bcrypt');
+const crypto = require('crypto');
+
 const app = express();
-const PORT = 3001;
-
-// URL base do app (para callback do Steam) - remove barra final se existir
-const BASE_URL = (process.env.BASE_URL || 'http://localhost:3001').replace(/\/+$/, '');
-
-// Confiar no proxy do Render (necessário para cookies seguros atrás de proxy)
-app.set('trust proxy', 1);
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static('public'));
 
-// Configuração de sessão para Steam Auth
-// Steam authentication removed
-
-// Servir arquivos estáticos do frontend
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Configuração do PostgreSQL via variáveis de ambiente (Render exige SSL)
+// PostgreSQL connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
-const DATA_FILE = './confirmados.json';
-
-// Função para gerar hash de senha
-function hashSenha(senha) {
-  return crypto.createHash('sha256').update(senha).digest('hex');
-}
-
-// Função para gerar token de sessão
-function gerarToken() {
-  return crypto.randomBytes(32).toString('hex');
-}
-
-// Armazena tokens de sessão válidos (em memória - resetados quando servidor reinicia)
-const sessoes = new Map();
-
-// Criação/atualização da tabela se não existir (inclui genero e teste)
-async function criarTabela() {
+// Criar tabelas se não existirem
+async function initDB() {
   try {
+    // Tabela de confirmados atuais (temporária - semanal)
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS confirmados (
+      CREATE TABLE IF NOT EXISTS confirmados_atual (
         id SERIAL PRIMARY KEY,
-        nome VARCHAR(100) NOT NULL,
-        tipo VARCHAR(20) NOT NULL,
-        genero VARCHAR(20),
-        teste BOOLEAN DEFAULT false,
-        data TIMESTAMP NOT NULL DEFAULT NOW()
+        nome VARCHAR(255) NOT NULL,
+        tipo VARCHAR(50) NOT NULL,
+        genero VARCHAR(50),
+        data_confirmacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    await pool.query("ALTER TABLE confirmados ADD COLUMN IF NOT EXISTS genero VARCHAR(20)");
-    await pool.query("ALTER TABLE confirmados ADD COLUMN IF NOT EXISTS teste BOOLEAN DEFAULT false");
     
-    // Criar tabela de admin
+    // Tabela de histórico (permanente)
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS admin (
+      CREATE TABLE IF NOT EXISTS historico_confirmacoes (
         id SERIAL PRIMARY KEY,
-        usuario VARCHAR(50) UNIQUE NOT NULL,
-        senha_hash VARCHAR(64) NOT NULL,
-        criado_em TIMESTAMP NOT NULL DEFAULT NOW()
+        nome VARCHAR(255) NOT NULL,
+        tipo VARCHAR(50) NOT NULL,
+        genero VARCHAR(50),
+        data_confirmacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    
+    // Tabela de admins
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS admins (
+        id SERIAL PRIMARY KEY,
+        usuario VARCHAR(100) UNIQUE NOT NULL,
+        senha_hash VARCHAR(255) NOT NULL,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // Tabela de tokens
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS admin_tokens (
+        token VARCHAR(255) PRIMARY KEY,
+        admin_id INTEGER REFERENCES admins(id),
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        expira_em TIMESTAMP
+      )
+    `);
+    
+    console.log('Tabelas criadas/verificadas com sucesso!');
+    
+    // Criar admin padrão se não existir
+    const adminExists = await pool.query('SELECT * FROM admins WHERE usuario = $1', ['admin']);
+    if (adminExists.rows.length === 0) {
+      const senhaHash = await bcrypt.hash('admin123', 10);
+      await pool.query('INSERT INTO admins (usuario, senha_hash) VALUES ($1, $2)', ['admin', senhaHash]);
+      console.log('Admin padrão criado: admin/admin123');
+    }
   } catch (err) {
-    console.error('Erro ao criar/atualizar tabelas:', err);
+    console.error('Erro ao criar tabelas:', err);
   }
 }
-criarTabela();
-// Rota para limpar todos os confirmados
-app.delete('/confirmados', async (req, res) => {
-  try {
-    await pool.query('DELETE FROM confirmados');
-    res.json({ sucesso: true });
-  } catch (err) {
-    res.status(500).json({ erro: 'Erro ao limpar confirmados.' });
-  }
-});
 
-// Rota para registrar presença
-app.post('/confirmar', async (req, res) => {
-  const { nome, tipo, genero, teste = false } = req.body;
-  if (!nome || !tipo || !genero) {
-    return res.status(400).json({ erro: 'Nome, tipo e genero são obrigatórios.' });
+initDB();
+
+// MIDDLEWARE: Verificar token admin
+async function verificarAdmin(req, res, next) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) {
+    return res.status(401).json({ erro: 'Token não fornecido' });
   }
+  
   try {
-    // Verifica duplicidade
-    const existe = await pool.query('SELECT 1 FROM confirmados WHERE LOWER(nome) = LOWER($1)', [nome]);
-    if (existe.rowCount > 0) {
-      return res.status(409).json({ erro: 'Nome já confirmado.' });
+    const result = await pool.query(
+      'SELECT * FROM admin_tokens WHERE token = $1 AND expira_em > NOW()',
+      [token]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(401).json({ erro: 'Token inválido ou expirado' });
     }
-    // Verifica se já atingiu o limite de 24 confirmados (não conta testes)
-    const cnt = await pool.query('SELECT COUNT(*) FROM confirmados WHERE teste = false');
-    const confirmedCount = parseInt(cnt.rows[0].count, 10);
-    if (confirmedCount >= 24 && !teste) {
-      return res.status(403).json({ erro: 'Limite de 24 confirmados atingido.' });
-    }
-    // Insere e retorna timestamp
-    const insert = await pool.query('INSERT INTO confirmados (nome, tipo, genero, teste) VALUES ($1, $2, $3, $4) RETURNING data, id', [nome, tipo, genero, teste]);
-    const insertedAt = insert.rows[0].data;
-    // Calcula posição na lista (ordem por data asc)
-    const posRes = await pool.query('SELECT COUNT(*) FROM confirmados WHERE data <= $1', [insertedAt]);
-    const position = parseInt(posRes.rows[0].count, 10);
-    const isWaitlist = position > 24;
-    res.json({ sucesso: true, position, waitlist: isWaitlist });
+    
+    req.adminId = result.rows[0].admin_id;
+    next();
   } catch (err) {
-    console.error('Erro /confirmar:', err);
-    res.status(500).json({ erro: 'Erro ao registrar presença.' });
+    return res.status(500).json({ erro: 'Erro ao verificar token' });
   }
-});
-
-// Rota para listar confirmados
-app.get('/confirmados', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT id, nome, tipo, genero, teste, data FROM confirmados WHERE teste = false ORDER BY data ASC');
-    const rows = result.rows;
-    const confirmed = rows.slice(0, 24);
-    const waitlist = rows.slice(24);
-    res.json({ confirmed, waitlist });
-  } catch (err) {
-    console.error('Erro /confirmados:', err);
-    res.status(500).json({ erro: 'Erro ao buscar confirmados.' });
-  }
-});
-
-// Rota para remover um confirmado por id
-app.delete('/confirmados/:id', async (req, res) => {
-  const id = req.params.id;
-  try {
-    const del = await pool.query('DELETE FROM confirmados WHERE id = $1', [id]);
-    if (del.rowCount === 0) {
-      return res.status(404).json({ erro: 'Confirmado não encontrado.' });
-    }
-    res.json({ sucesso: true });
-  } catch (err) {
-    console.error('Erro DELETE /confirmados/:id', err);
-    res.status(500).json({ erro: 'Erro ao remover confirmado.' });
-  }
-});
-
-// Middleware para verificar autenticação admin
-function verificarAdmin(req, res, next) {
-  const token = req.headers['x-admin-token'];
-  if (!token || !sessoes.has(token)) {
-    return res.status(401).json({ erro: 'Acesso negado. Faça login como admin.' });
-  }
-  next();
 }
 
-// Rota para setup inicial do admin (só funciona se não existir admin)
-app.post('/setup-admin', async (req, res) => {
-  const { usuario, senha } = req.body;
-  if (!usuario || !senha) {
-    return res.status(400).json({ erro: 'Usuário e senha são obrigatórios.' });
-  }
-  try {
-    // Verifica se já existe um admin
-    const existe = await pool.query('SELECT COUNT(*) FROM admin');
-    if (parseInt(existe.rows[0].count) > 0) {
-      return res.status(403).json({ erro: 'Admin já configurado. Use login.' });
-    }
-    // Cria o admin
-    const senhaHash = hashSenha(senha);
-    await pool.query('INSERT INTO admin (usuario, senha_hash) VALUES ($1, $2)', [usuario, senhaHash]);
-    res.json({ sucesso: true, mensagem: 'Admin criado com sucesso!' });
-  } catch (err) {
-    console.error('Erro setup-admin:', err);
-    res.status(500).json({ erro: 'Erro ao criar admin.' });
-  }
-});
-
-// Rota para verificar se admin existe
-app.get('/admin-existe', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT COUNT(*) FROM admin');
-    res.json({ existe: parseInt(result.rows[0].count) > 0 });
-  } catch (err) {
-    res.json({ existe: false });
-  }
-});
-
-// Rota para login admin
+// LOGIN ADMIN
 app.post('/login', async (req, res) => {
   const { usuario, senha } = req.body;
-  if (!usuario || !senha) {
-    return res.status(400).json({ erro: 'Usuário e senha são obrigatórios.' });
-  }
+  
   try {
-    const senhaHash = hashSenha(senha);
-    const result = await pool.query('SELECT * FROM admin WHERE usuario = $1 AND senha_hash = $2', [usuario, senhaHash]);
-    if (result.rowCount === 0) {
-      return res.status(401).json({ erro: 'Usuário ou senha inválidos.' });
+    const result = await pool.query('SELECT * FROM admins WHERE usuario = $1', [usuario]);
+    
+    if (result.rows.length === 0) {
+      return res.status(401).json({ sucesso: false, erro: 'Usuário não encontrado' });
     }
-    const token = gerarToken();
-    sessoes.set(token, { usuario, loginEm: Date.now() });
-    // Limpa tokens antigos (mais de 24h)
-    for (const [t, data] of sessoes) {
-      if (Date.now() - data.loginEm > 24 * 60 * 60 * 1000) sessoes.delete(t);
+    
+    const admin = result.rows[0];
+    const senhaValida = await bcrypt.compare(senha, admin.senha_hash);
+    
+    if (!senhaValida) {
+      return res.status(401).json({ sucesso: false, erro: 'Senha incorreta' });
     }
+    
+    // Gerar token
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiraEm = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 horas
+    
+    await pool.query(
+      'INSERT INTO admin_tokens (token, admin_id, expira_em) VALUES ($1, $2, $3)',
+      [token, admin.id, expiraEm]
+    );
+    
     res.json({ sucesso: true, token });
   } catch (err) {
-    console.error('Erro login:', err);
-    res.status(500).json({ erro: 'Erro ao fazer login.' });
+    console.error('Erro no login:', err);
+    res.status(500).json({ sucesso: false, erro: 'Erro no servidor' });
   }
 });
 
-// Rota para logout
-app.post('/logout', (req, res) => {
-  const token = req.headers['x-admin-token'];
-  if (token) sessoes.delete(token);
-  res.json({ sucesso: true });
-});
-
-// Rota para verificar se token é válido
-app.get('/verificar-token', (req, res) => {
-  const token = req.headers['x-admin-token'];
-  if (token && sessoes.has(token)) {
-    res.json({ valido: true, usuario: sessoes.get(token).usuario });
-  } else {
-    res.json({ valido: false });
-  }
-});
-
-// Rota para remover todas as confirmações de um usuário por nome (PROTEGIDA)
-app.delete('/estatisticas/:nome', verificarAdmin, async (req, res) => {
-  const nome = decodeURIComponent(req.params.nome);
+// LOGOUT ADMIN
+app.post('/logout', async (req, res) => {
+  const { token } = req.body;
+  
   try {
-    const del = await pool.query('DELETE FROM confirmados WHERE LOWER(nome) = LOWER($1)', [nome]);
-    if (del.rowCount === 0) {
-      return res.status(404).json({ erro: 'Usuário não encontrado.' });
-    }
-    res.json({ sucesso: true, removidos: del.rowCount });
+    await pool.query('DELETE FROM admin_tokens WHERE token = $1', [token]);
+    res.json({ sucesso: true });
   } catch (err) {
-    console.error('Erro DELETE /estatisticas/:nome', err);
-    res.status(500).json({ erro: 'Erro ao remover usuário das estatísticas.' });
+    res.status(500).json({ sucesso: false, erro: 'Erro ao fazer logout' });
   }
 });
 
-// Rota para retornar estatísticas de frequência
+// CONFIRMAR PRESENÇA (salva em AMBAS as tabelas)
+app.post('/confirmar', async (req, res) => {
+  const { nome, tipo, genero } = req.body;
+  
+  if (!nome || !tipo || !genero) {
+    return res.status(400).json({ erro: 'Nome, tipo e gênero são obrigatórios' });
+  }
+  
+  try {
+    // Verifica se já tem 24 confirmados
+    const countResult = await pool.query('SELECT COUNT(*) as total FROM confirmados_atual');
+    const total = parseInt(countResult.rows[0].total);
+    
+    if (total >= 24) {
+      return res.status(400).json({ erro: 'Limite de 24 confirmados atingido!' });
+    }
+    
+    // Salvar na lista atual (temporária)
+    const resultAtual = await pool.query(
+      'INSERT INTO confirmados_atual (nome, tipo, genero) VALUES ($1, $2, $3) RETURNING *',
+      [nome, tipo, genero]
+    );
+    
+    // Salvar no histórico (permanente)
+    await pool.query(
+      'INSERT INTO historico_confirmacoes (nome, tipo, genero) VALUES ($1, $2, $3)',
+      [nome, tipo, genero]
+    );
+    
+    res.json({ sucesso: true, confirmado: resultAtual.rows[0] });
+  } catch (err) {
+    console.error('Erro ao confirmar:', err);
+    res.status(500).json({ erro: 'Erro ao confirmar presença' });
+  }
+});
+
+// LISTAR CONFIRMADOS ATUAIS
+app.get('/confirmados', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM confirmados_atual ORDER BY data_confirmacao ASC LIMIT 24'
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao listar:', err);
+    res.status(500).json({ erro: 'Erro ao listar confirmados' });
+  }
+});
+
+// REMOVER CONFIRMADO ATUAL (não afeta histórico)
+app.delete('/confirmados/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    await pool.query('DELETE FROM confirmados_atual WHERE id = $1', [id]);
+    res.json({ sucesso: true });
+  } catch (err) {
+    console.error('Erro ao remover:', err);
+    res.status(500).json({ erro: 'Erro ao remover' });
+  }
+});
+
+// LIMPAR LISTA DE CONFIRMADOS ATUAIS (não afeta histórico)
+app.delete('/confirmados', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM confirmados_atual');
+    res.json({ sucesso: true });
+  } catch (err) {
+    console.error('Erro ao limpar:', err);
+    res.status(500).json({ erro: 'Erro ao limpar lista' });
+  }
+});
+
+// ESTATÍSTICAS (busca do histórico permanente)
 app.get('/estatisticas', async (req, res) => {
   try {
-    const result = await pool.query(`
+    // Ranking geral
+    const ranking = await pool.query(`
       SELECT 
-        nome, 
-        genero, 
+        nome,
         tipo,
+        genero,
         COUNT(*) as total_confirmacoes,
-        MAX(data) as ultima_confirmacao
-      FROM confirmados
-      WHERE teste = false
-      GROUP BY nome, genero, tipo
-      ORDER BY total_confirmacoes DESC
+        MAX(data_confirmacao) as ultima_confirmacao
+      FROM historico_confirmacoes
+      GROUP BY nome, tipo, genero
+      ORDER BY total_confirmacoes DESC, nome ASC
     `);
-    const stats = result.rows;
     
-    // Calcula estatísticas gerais
-    const totalConfirmacoes = stats.reduce((sum, s) => sum + parseInt(s.total_confirmacoes, 10), 0);
-    const pessoasUnicas = stats.length;
-    const mediaConfirmacoes = pessoasUnicas > 0 ? (totalConfirmacoes / pessoasUnicas).toFixed(2) : 0;
+    // Resumo
+    const resumo = await pool.query(`
+      SELECT 
+        COUNT(*) as totalConfirmacoes,
+        COUNT(DISTINCT nome) as pessoasUnicas,
+        AVG(confirmacoes_por_pessoa) as mediaConfirmacoes
+      FROM (
+        SELECT nome, COUNT(*) as confirmacoes_por_pessoa
+        FROM historico_confirmacoes
+        GROUP BY nome
+      ) subquery
+    `);
     
-    // Estatísticas por gênero
-    const porGenero = {};
-    stats.forEach(s => {
-      if (!porGenero[s.genero]) porGenero[s.genero] = { total: 0, pessoas: 0 };
-      porGenero[s.genero].total += parseInt(s.total_confirmacoes, 10);
-      porGenero[s.genero].pessoas += 1;
+    // Por gênero
+    const porGenero = await pool.query(`
+      SELECT 
+        genero,
+        COUNT(*) as total,
+        COUNT(DISTINCT nome) as pessoas
+      FROM historico_confirmacoes
+      GROUP BY genero
+    `);
+    
+    const generoObj = {};
+    porGenero.rows.forEach(row => {
+      generoObj[row.genero] = {
+        total: parseInt(row.total),
+        pessoas: parseInt(row.pessoas)
+      };
     });
     
-    res.json({ 
-      ranking: stats,
-      resumo: { totalConfirmacoes, pessoasUnicas, mediaConfirmacoes },
-      porGenero 
+    res.json({
+      ranking: ranking.rows,
+      resumo: resumo.rows[0],
+      porGenero: generoObj
     });
   } catch (err) {
-    console.error('Erro /estatisticas:', err);
-    res.status(500).json({ erro: 'Erro ao buscar estatísticas.' });
+    console.error('Erro nas estatísticas:', err);
+    res.status(500).json({ erro: 'Erro ao buscar estatísticas' });
   }
 });
 
-// Steam-related routes removed
+// REMOVER PESSOA DO HISTÓRICO (ADMIN APENAS)
+app.delete('/estatisticas/pessoa/:nome', verificarAdmin, async (req, res) => {
+  const { nome } = req.params;
+  
+  try {
+    // Remove TODAS as confirmações dessa pessoa do histórico
+    await pool.query('DELETE FROM historico_confirmacoes WHERE nome = $1', [nome]);
+    
+    // Remove também da lista atual se estiver lá
+    await pool.query('DELETE FROM confirmados_atual WHERE nome = $1', [nome]);
+    
+    res.json({ sucesso: true });
+  } catch (err) {
+    console.error('Erro ao remover pessoa:', err);
+    res.status(500).json({ erro: 'Erro ao remover pessoa das estatísticas' });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
-});
-
-// Endpoint para retornar versão/commit atual (útil para confirmar deploys)
-app.get('/version', (req, res) => {
-  // 1) Allow explicit env var (set this in Render: COMMIT or DEPLOY_COMMIT)
-  const envCommit = process.env.COMMIT || process.env.DEPLOY_COMMIT || null;
-  const envBranch = process.env.BRANCH || process.env.DEPLOY_BRANCH || null;
-  if (envCommit || envBranch) return res.json({ commit: envCommit || null, branch: envBranch || null });
-
-  // 2) Try reading a generated file `public/version.json` created at build time
-  try {
-    const verPath = path.join(__dirname, 'public', 'version.json');
-    if (fs.existsSync(verPath)) {
-      const content = fs.readFileSync(verPath, 'utf8');
-      const json = JSON.parse(content);
-      return res.json({ commit: json.commit || null, branch: json.branch || null });
-    }
-  } catch (e) {
-    // ignore and fallback to git
-  }
-
-  // 3) Fallback: try to read via git (may not be available in some deploy environments)
-  exec('git rev-parse --short HEAD', { cwd: __dirname }, (err, stdout) => {
-    const commit = err ? null : (stdout || '').trim();
-    exec('git rev-parse --abbrev-ref HEAD', { cwd: __dirname }, (err2, stdout2) => {
-      const branch = err2 ? null : (stdout2 || '').trim();
-      res.json({ commit, branch });
-    });
-  });
 });
