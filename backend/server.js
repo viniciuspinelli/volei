@@ -1,9 +1,8 @@
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
-const bcrypt = require('bcryptjs'); // MUDOU: bcryptjs ao invés de bcrypt
+const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,11 +17,31 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
-// Criar tabelas se não existirem
+// Criar tabelas se não existirem - COM MIGRAÇÃO AUTOMÁTICA
 async function initDB() {
+  const client = await pool.connect();
+  
   try {
-    // Tabela de confirmados atuais (temporária - semanal)
-    await pool.query(`
+    await client.query('BEGIN');
+    
+    // Verificar se existe tabela admins antiga (sem a estrutura correta)
+    const checkAdmins = await client.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'admins' AND column_name = 'usuario'
+    `);
+    
+    // Se não existe a coluna usuario, dropar e recriar
+    if (checkAdmins.rows.length === 0) {
+      console.log('Estrutura antiga detectada. Recriando tabelas...');
+      await client.query('DROP TABLE IF EXISTS admin_tokens CASCADE');
+      await client.query('DROP TABLE IF EXISTS admins CASCADE');
+      await client.query('DROP TABLE IF EXISTS confirmados_atual CASCADE');
+      await client.query('DROP TABLE IF EXISTS historico_confirmacoes CASCADE');
+    }
+    
+    // Criar tabela de confirmados atuais
+    await client.query(`
       CREATE TABLE IF NOT EXISTS confirmados_atual (
         id SERIAL PRIMARY KEY,
         nome VARCHAR(255) NOT NULL,
@@ -32,8 +51,8 @@ async function initDB() {
       )
     `);
     
-    // Tabela de histórico (permanente)
-    await pool.query(`
+    // Criar tabela de histórico
+    await client.query(`
       CREATE TABLE IF NOT EXISTS historico_confirmacoes (
         id SERIAL PRIMARY KEY,
         nome VARCHAR(255) NOT NULL,
@@ -43,8 +62,8 @@ async function initDB() {
       )
     `);
     
-    // Tabela de admins
-    await pool.query(`
+    // Criar tabela de admins
+    await client.query(`
       CREATE TABLE IF NOT EXISTS admins (
         id SERIAL PRIMARY KEY,
         usuario VARCHAR(100) UNIQUE NOT NULL,
@@ -53,27 +72,33 @@ async function initDB() {
       )
     `);
     
-    // Tabela de tokens
-    await pool.query(`
+    // Criar tabela de tokens
+    await client.query(`
       CREATE TABLE IF NOT EXISTS admin_tokens (
         token VARCHAR(255) PRIMARY KEY,
-        admin_id INTEGER REFERENCES admins(id),
+        admin_id INTEGER REFERENCES admins(id) ON DELETE CASCADE,
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         expira_em TIMESTAMP
       )
     `);
     
-    console.log('Tabelas criadas/verificadas com sucesso!');
+    await client.query('COMMIT');
+    console.log('✅ Tabelas criadas/verificadas com sucesso!');
     
     // Criar admin padrão se não existir
-    const adminExists = await pool.query('SELECT * FROM admins WHERE usuario = $1', ['admin']);
+    const adminExists = await client.query('SELECT * FROM admins WHERE usuario = $1', ['admin']);
     if (adminExists.rows.length === 0) {
       const senhaHash = await bcrypt.hash('admin123', 10);
-      await pool.query('INSERT INTO admins (usuario, senha_hash) VALUES ($1, $2)', ['admin', senhaHash]);
-      console.log('Admin padrão criado: admin/admin123');
+      await client.query('INSERT INTO admins (usuario, senha_hash) VALUES ($1, $2)', ['admin', senhaHash]);
+      console.log('✅ Admin padrão criado: admin/admin123');
     }
+    
   } catch (err) {
-    console.error('Erro ao criar tabelas:', err);
+    await client.query('ROLLBACK');
+    console.error('❌ Erro ao criar tabelas:', err);
+    throw err;
+  } finally {
+    client.release();
   }
 }
 
@@ -139,13 +164,33 @@ app.post('/login', async (req, res) => {
 
 // LOGOUT ADMIN
 app.post('/logout', async (req, res) => {
-  const { token } = req.body;
+  const token = req.headers.authorization?.replace('Bearer ', '');
   
   try {
     await pool.query('DELETE FROM admin_tokens WHERE token = $1', [token]);
     res.json({ sucesso: true });
   } catch (err) {
     res.status(500).json({ sucesso: false, erro: 'Erro ao fazer logout' });
+  }
+});
+
+// VERIFICAR TOKEN
+app.get('/verificar-token', async (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  
+  if (!token) {
+    return res.json({ valido: false });
+  }
+  
+  try {
+    const result = await pool.query(
+      'SELECT * FROM admin_tokens WHERE token = $1 AND expira_em > NOW()',
+      [token]
+    );
+    
+    res.json({ valido: result.rows.length > 0 });
+  } catch (err) {
+    res.json({ valido: false });
   }
 });
 
@@ -239,17 +284,18 @@ app.get('/estatisticas', async (req, res) => {
     `);
     
     // Resumo
-    const resumo = await pool.query(`
-      SELECT 
-        COUNT(*) as totalConfirmacoes,
-        COUNT(DISTINCT nome) as pessoasUnicas,
-        AVG(confirmacoes_por_pessoa) as mediaConfirmacoes
-      FROM (
-        SELECT nome, COUNT(*) as confirmacoes_por_pessoa
-        FROM historico_confirmacoes
-        GROUP BY nome
-      ) subquery
+    const totalConfirmacoes = await pool.query(`
+      SELECT COUNT(*) as total FROM historico_confirmacoes
     `);
+    
+    const pessoasUnicas = await pool.query(`
+      SELECT COUNT(DISTINCT nome) as total FROM historico_confirmacoes
+    `);
+    
+    // Calcular média
+    const total = parseInt(totalConfirmacoes.rows[0].total) || 0;
+    const pessoas = parseInt(pessoasUnicas.rows[0].total) || 1;
+    const media = pessoas > 0 ? (total / pessoas).toFixed(1) : 0;
     
     // Por gênero
     const porGenero = await pool.query(`
@@ -269,14 +315,85 @@ app.get('/estatisticas', async (req, res) => {
       };
     });
     
+    // Formatar ranking para o frontend
+    const rankingFormatado = ranking.rows.map(row => ({
+      nome: row.nome,
+      tipo: row.tipo,
+      genero: row.genero,
+      totalconfirmacoes: parseInt(row.total_confirmacoes),
+      ultimaconfirmacao: row.ultima_confirmacao
+    }));
+    
     res.json({
-      ranking: ranking.rows,
-      resumo: resumo.rows[0],
+      ranking: rankingFormatado,
+      resumo: {
+        totalConfirmacoes: total,
+        pessoasUnicas: pessoas,
+        mediaConfirmacoes: media
+      },
       porGenero: generoObj
     });
   } catch (err) {
     console.error('Erro nas estatísticas:', err);
     res.status(500).json({ erro: 'Erro ao buscar estatísticas' });
+  }
+});
+
+// EDITAR NÚMERO DE PRESENÇAS (ADMIN)
+app.put('/estatisticas/pessoa/:nome', verificarAdmin, async (req, res) => {
+  const { nome } = req.params;
+  const { novoTotal } = req.body;
+  
+  if (!novoTotal || novoTotal < 0) {
+    return res.status(400).json({ erro: 'Informe um número válido de presenças' });
+  }
+  
+  try {
+    // Buscar dados atuais da pessoa
+    const pessoa = await pool.query(
+      'SELECT tipo, genero, COUNT(*) as atual FROM historico_confirmacoes WHERE nome = $1 GROUP BY tipo, genero',
+      [nome]
+    );
+    
+    if (pessoa.rows.length === 0) {
+      return res.status(404).json({ erro: 'Pessoa não encontrada' });
+    }
+    
+    const { tipo, genero, atual } = pessoa.rows[0];
+    const atualInt = parseInt(atual);
+    const diferenca = novoTotal - atualInt;
+    
+    if (diferenca > 0) {
+      // Adicionar registros
+      for (let i = 0; i < diferenca; i++) {
+        await pool.query(
+          'INSERT INTO historico_confirmacoes (nome, tipo, genero) VALUES ($1, $2, $3)',
+          [nome, tipo, genero]
+        );
+      }
+    } else if (diferenca < 0) {
+      // Remover registros (os mais recentes)
+      await pool.query(
+        `DELETE FROM historico_confirmacoes 
+         WHERE id IN (
+           SELECT id FROM historico_confirmacoes 
+           WHERE nome = $1 
+           ORDER BY data_confirmacao DESC 
+           LIMIT $2
+         )`,
+        [nome, Math.abs(diferenca)]
+      );
+    }
+    
+    res.json({ 
+      sucesso: true, 
+      anterior: atualInt,
+      novo: novoTotal,
+      diferenca: diferenca
+    });
+  } catch (err) {
+    console.error('Erro ao editar presenças:', err);
+    res.status(500).json({ erro: 'Erro ao editar presenças' });
   }
 });
 
@@ -286,15 +403,41 @@ app.delete('/estatisticas/pessoa/:nome', verificarAdmin, async (req, res) => {
   
   try {
     // Remove TODAS as confirmações dessa pessoa do histórico
-    await pool.query('DELETE FROM historico_confirmacoes WHERE nome = $1', [nome]);
+    const result = await pool.query('DELETE FROM historico_confirmacoes WHERE nome = $1', [nome]);
     
     // Remove também da lista atual se estiver lá
     await pool.query('DELETE FROM confirmados_atual WHERE nome = $1', [nome]);
     
-    res.json({ sucesso: true });
+    res.json({ sucesso: true, removidos: result.rowCount });
   } catch (err) {
     console.error('Erro ao remover pessoa:', err);
     res.status(500).json({ erro: 'Erro ao remover pessoa das estatísticas' });
+  }
+});
+
+// TROCAR SENHA DO ADMIN
+app.post('/admin/trocar-senha', verificarAdmin, async (req, res) => {
+  const { senha_antiga, senha_nova } = req.body;
+  
+  try {
+    const admin = await pool.query('SELECT * FROM admins WHERE id = $1', [req.adminId]);
+    
+    if (admin.rows.length === 0) {
+      return res.status(404).json({ erro: 'Admin não encontrado' });
+    }
+    
+    const senhaValida = await bcrypt.compare(senha_antiga, admin.rows[0].senha_hash);
+    if (!senhaValida) {
+      return res.status(401).json({ erro: 'Senha antiga incorreta' });
+    }
+    
+    const novaSenhaHash = await bcrypt.hash(senha_nova, 10);
+    await pool.query('UPDATE admins SET senha_hash = $1 WHERE id = $2', [novaSenhaHash, req.adminId]);
+    
+    res.json({ sucesso: true, mensagem: 'Senha alterada com sucesso!' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ erro: 'Erro ao trocar senha' });
   }
 });
 
