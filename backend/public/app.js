@@ -142,6 +142,7 @@ function sortearTimes(confirmados) {
   const NUM_TIMES = 4;
   const MAX_POR_TIME = 6;
 
+  const totalConfirmados = (confirmados || []).length;
   confirmados = (confirmados || []).slice(0, MAX_JOGADORES);
   confirmados.forEach(c => { if (!c.genero) c.genero = 'masculino'; });
 
@@ -189,9 +190,12 @@ function sortearTimes(confirmados) {
   }
 
   // Preenche com 'Vaga Livre' até MAX_POR_TIME em cada time
-  for (let i = 0; i < NUM_TIMES; i++) {
-    while (times[i].length < MAX_POR_TIME) {
-      times[i].push({ nome: 'Vaga Livre', genero: '', tipo: '' });
+  // Somente adiciona vagas livres se o total de confirmados for menor que o limite do sistema (24)
+  if (totalConfirmados < MAX_JOGADORES) {
+    for (let i = 0; i < NUM_TIMES; i++) {
+      while (times[i].length < MAX_POR_TIME) {
+        times[i].push({ nome: 'Vaga Livre', genero: '', tipo: '' });
+      }
     }
   }
 
