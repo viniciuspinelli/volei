@@ -143,7 +143,9 @@ function sortearTimes(confirmados) {
   const MAX_POR_TIME = 6;
 
   const totalConfirmados = (confirmados || []).length;
-  confirmados = (confirmados || []).slice(0, MAX_JOGADORES);
+  // cap to MAX_JOGADORES and absolute capacity (NUM_TIMES * MAX_POR_TIME)
+  const capacidade = Math.min(MAX_JOGADORES, NUM_TIMES * MAX_POR_TIME);
+  confirmados = (confirmados || []).slice(0, capacidade);
   confirmados.forEach(c => { if (!c.genero) c.genero = 'masculino'; });
 
   // Separa por gênero e embaralha
@@ -159,38 +161,36 @@ function sortearTimes(confirmados) {
   shuffle(homens);
   shuffle(mulheres);
 
+  // Intercala mulheres e homens para tentar balancear
+  const combinado = [];
+  let mi = 0, hi = 0;
+  while (mi < mulheres.length || hi < homens.length) {
+    if (mi < mulheres.length) combinado.push(mulheres[mi++]);
+    if (hi < homens.length) combinado.push(homens[hi++]);
+  }
+
   // Inicializa times
   const times = Array.from({ length: NUM_TIMES }, () => []);
 
-  // Função utilitária: encontra índice do time com menos pessoas (< MAX_POR_TIME)
-  function acharTimeComMenosPessoas() {
-    let idx = -1;
-    let min = Infinity;
-    for (let i = 0; i < NUM_TIMES; i++) {
-      if (times[i].length < MAX_POR_TIME && times[i].length < min) {
-        min = times[i].length;
-        idx = i;
+  // Distribui em round-robin, sempre respeitando MAX_POR_TIME
+  for (let i = 0; i < combinado.length; i++) {
+    const player = combinado[i];
+    const start = i % NUM_TIMES;
+    let placed = false;
+    // tenta colocar no time start, se cheio tenta próximos circularmente
+    for (let k = 0; k < NUM_TIMES; k++) {
+      const idx = (start + k) % NUM_TIMES;
+      if (times[idx].length < MAX_POR_TIME) {
+        times[idx].push(player);
+        placed = true;
+        break;
       }
     }
-    return idx;
+    // se não colocou (todos cheios), descarta
+    if (!placed) break;
   }
 
-  // Distribui mulheres primeiro, tentando colocar uma por time quando possível
-  for (let i = 0; i < mulheres.length; i++) {
-    const idx = acharTimeComMenosPessoas();
-    if (idx === -1) break; // todos cheios
-    times[idx].push(mulheres[i]);
-  }
-
-  // Distribui homens preenchendo os times com menos pessoas (sem ultrapassar MAX_POR_TIME)
-  for (let i = 0; i < homens.length; i++) {
-    const idx = acharTimeComMenosPessoas();
-    if (idx === -1) break;
-    times[idx].push(homens[i]);
-  }
-
-  // Preenche com 'Vaga Livre' até MAX_POR_TIME em cada time
-  // Somente adiciona vagas livres se o total de confirmados for menor que o limite do sistema (24)
+  // Preenche com 'Vaga Livre' apenas quando total confirmados for menor que MAX_JOGADORES
   if (totalConfirmados < MAX_JOGADORES) {
     for (let i = 0; i < NUM_TIMES; i++) {
       while (times[i].length < MAX_POR_TIME) {
