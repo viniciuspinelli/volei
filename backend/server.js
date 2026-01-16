@@ -1,8 +1,9 @@
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs'); // MUDOU: bcryptjs ao invés de bcrypt
 const crypto = require('crypto');
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
