@@ -39,6 +39,8 @@
     .nav-item { display: flex; align-items: center; gap: var(--spacing-md); padding: 14px 16px; border-radius: var(--radius-md); color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s; cursor: pointer; border: none; background: transparent; width: 100%; text-align: left; }
     .nav-item:hover { background: rgba(255, 107, 0, 0.1); color: var(--text-primary); }
     .nav-item.active { background: rgba(255, 107, 0, 0.15); color: var(--accent); border-left: 3px solid var(--accent); }
+    .sidebar-admin { border-top: 1px solid rgba(255,255,255,0.05); padding-top: var(--spacing-md); margin-top: auto; }
+    .nav-item.admin-logged { color: var(--accent); }
     
     .main-content { flex: 1; margin-left: var(--sidebar-width); padding: var(--spacing-xl); min-height: 100vh; }
     .page { display: none; max-width: 800px; margin: 0 auto; }
@@ -59,6 +61,8 @@
     .btn { height: 48px; padding: 12px 20px; border-radius: var(--radius-md); border: none; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: var(--spacing-sm); }
     .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #000; }
     .btn-primary:hover { background: linear-gradient(135deg, var(--accent-light), var(--accent)); transform: translateY(-1px); }
+    .btn-secondary { background: rgba(255,107,0,0.15); border: 1px solid rgba(255,107,0,0.3); color: var(--accent); }
+    .btn-secondary:hover { background: rgba(255,107,0,0.25); }
     .btn-danger { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: var(--danger); }
     .btn-danger:hover { background: rgba(239,68,68,0.25); }
     .btn-block { width: 100%; }
@@ -85,9 +89,27 @@
     .time-card h4 { color: var(--accent); font-size: 15px; margin-bottom: var(--spacing-sm); padding-bottom: var(--spacing-sm); border-bottom: 1px solid rgba(255,255,255,0.05); }
     .time-card ul { list-style: none; }
     .time-card li { font-size: 14px; padding: 6px 0; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
-    
     .btn-whatsapp { background: rgba(37,211,102,0.15); border: 1px solid rgba(37,211,102,0.3); color: #25d366; }
     .btn-whatsapp:hover { background: rgba(37,211,102,0.25); }
+    
+    /* ESTATÍSTICAS */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-md); margin-bottom: var(--spacing-lg); }
+    .stat-card { background: rgba(255,255,255,0.02); border-radius: var(--radius-md); padding: var(--spacing-lg); text-align: center; border: 1px solid rgba(255,255,255,0.05); }
+    .stat-value { font-size: 36px; font-weight: 700; color: var(--accent); }
+    .stat-label { font-size: 13px; color: var(--text-muted); margin-top: var(--spacing-xs); }
+    .ranking-list { list-style: none; }
+    .ranking-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+    .ranking-item .pos { width: 30px; height: 30px; background: rgba(255,107,0,0.15); color: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; margin-right: var(--spacing-md); }
+    .ranking-item .pos.top-3 { background: var(--accent); color: #000; }
+    .ranking-item .count { color: var(--text-muted); font-size: 14px; }
+    
+    /* MODAL LOGIN */
+    .login-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; align-items: center; justify-content: center; }
+    .login-modal.ativo { display: flex; }
+    .login-box { background: var(--bg-card); border-radius: var(--radius-lg); padding: 30px; max-width: 350px; width: 90%; border: 1px solid rgba(255,107,0,0.3); }
+    .login-box h3 { color: var(--accent); margin-bottom: 20px; text-align: center; }
+    .login-box input { width: 100%; margin-bottom: 12px; }
+    .login-erro { color: var(--danger); font-size: 13px; margin-bottom: 12px; text-align: center; display: none; }
     
     /* MENSAGEM */
     .mensagem { text-align: center; padding: var(--spacing-md); margin-bottom: var(--spacing-md); border-radius: var(--radius-md); font-size: 14px; min-height: 20px; }
@@ -99,6 +121,7 @@
       .sidebar { display: none; }
       .main-content { margin-left: 0; padding: var(--spacing-md); }
       .times-grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
 </head>
@@ -119,7 +142,21 @@
           <span class="icon">🎲</span>
           <span>Sorteio</span>
         </button>
+        <button class="nav-item" data-page="estatisticas">
+          <span class="icon">📊</span>
+          <span>Estatísticas</span>
+        </button>
       </nav>
+      <div class="sidebar-admin">
+        <button class="nav-item" id="btnAdminSidebar" onclick="abrirLogin()">
+          <span class="icon">🔐</span>
+          <span>Admin</span>
+        </button>
+        <button class="nav-item admin-logged" id="btnLogoutSidebar" onclick="fazerLogout()" style="display:none;">
+          <span class="icon">🚪</span>
+          <span>Sair</span>
+        </button>
+      </div>
     </aside>
     
     <!-- Main Content -->
@@ -175,27 +212,71 @@
           <p style="color: var(--text-muted); margin-bottom: 16px; font-size: 14px;">
             O sorteio distribui automaticamente os jogadores em 4 times, equilibrando homens e mulheres.
           </p>
-          <button class="btn btn-primary btn-block" id="sortearTimes">Sortear Times</button>
+          <div style="display: flex; gap: 12px;">
+            <button class="btn btn-primary" style="flex:1;" id="sortearTimes">Sortear Times</button>
+            <button class="btn btn-danger" id="limparSorteio" style="display:none;">Limpar</button>
+          </div>
         </div>
         <div id="resultadoSorteio"></div>
+      </section>
+      
+      <!-- Página Estatísticas -->
+      <section id="page-estatisticas" class="page">
+        <div class="page-header">
+          <h1 class="page-title">Estatísticas</h1>
+          <p class="page-subtitle">Acompanhe as presenças ao longo do tempo</p>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="statTotal">0</div>
+            <div class="stat-label">Total de Presenças</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statJogadores">0</div>
+            <div class="stat-label">Jogadores Únicos</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statMensalistas">0</div>
+            <div class="stat-label">Mensalistas</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statAvulsos">0</div>
+            <div class="stat-label">Avulsos</div>
+          </div>
+        </div>
+        <div class="card">
+          <h3 class="card-title">Ranking de Presenças</h3>
+          <ul class="ranking-list" id="rankingList"></ul>
+        </div>
       </section>
     </main>
   </div>
 
+  <!-- Modal Login Admin -->
+  <div class="login-modal" id="loginModal">
+    <div class="login-box">
+      <h3>Login Admin</h3>
+      <div class="login-erro" id="loginErro"></div>
+      <input type="text" id="loginUsuario" placeholder="Usuário">
+      <input type="password" id="loginSenha" placeholder="Senha">
+      <button class="btn btn-primary btn-block" onclick="fazerLogin()">Entrar</button>
+      <button class="btn btn-secondary btn-block" onclick="fecharLogin()" style="margin-top:8px;">Cancelar</button>
+    </div>
+  </div>
+
   <script>
-    // === CÓDIGO COMPLETO FUNCIONAL ===
-    
-    // Navegação
+    // NAVEGAÇÃO
     const navItems = document.querySelectorAll('[data-page]');
     const pages = document.querySelectorAll('.page');
     function navigateTo(pageId) {
       pages.forEach(p => p.classList.remove('active'));
       document.getElementById(`page-${pageId}`).classList.add('active');
       navItems.forEach(item => item.classList.toggle('active', item.dataset.page === pageId));
+      if (pageId === 'estatisticas') carregarEstatisticas();
     }
     navItems.forEach(item => item.addEventListener('click', () => navigateTo(item.dataset.page)));
     
-    // Mensagem
+    // MENSAGEM
     function mostrarMensagem(texto, tipo = '') {
       const el = document.getElementById('mensagem');
       el.textContent = texto;
@@ -203,7 +284,7 @@
       setTimeout(() => { el.textContent = ''; el.className = 'mensagem'; }, 3000);
     }
     
-    // Atualizar lista (CAP 24)
+    // ATUALIZAR LISTA (CAP 24)
     async function atualizarLista() {
       try {
         const res = await fetch('/confirmados');
@@ -249,13 +330,12 @@
         }
       } catch (err) {
         console.error('Erro lista:', err);
-        mostrarMensagem('Erro ao carregar lista.');
       }
     }
     
-    // Remover confirmado
+    // REMOVER CONFIRMADO
     async function removerConfirmado(id) {
-      if (!confirm('Remover esta pessoa da lista?')) return;
+      if (!confirm('Remover esta pessoa?')) return;
       try {
         const res = await fetch(`/confirmados/${id}`, { method: 'DELETE' });
         const data = await res.json();
@@ -270,13 +350,13 @@
       }
     }
     
-    // Form confirmação
+    // FORM CONFIRMAÇÃO
     document.getElementById('formConfirma').addEventListener('submit', async function(e) {
       e.preventDefault();
       const nome = document.getElementById('nome').value.trim();
       const tipo = document.getElementById('tipo').value;
       const genero = document.getElementById('genero').value;
-      if (!nome || !tipo || !genero) return mostrarMensagem('Preencha todos os campos.', 'erro');
+      if (!nome || !tipo || !genero) return;
       
       try {
         const res = await fetch('/confirmar', {
@@ -297,9 +377,8 @@
       }
     });
     
-    // SORTEIO PERFEITO (24 max, 4x6, sem vaga extra se 24)
+    // SORTEIO CORRIGIDO (24 max, 4x6 perfeitos, sem vaga extra se 24)
     function sortearTimes(confirmados) {
-      console.log('Sorteio iniciando com:', confirmados.length, 'confirmados');
       const MAX_JOGADORES = 24;
       const NUM_TIMES = 4;
       const MAX_POR_TIME = 6;
@@ -345,11 +424,30 @@
         });
       }
       
-      console.log('Times finais:', times.map(t => t.length));
       return times;
     }
     
-    // Botão sortear
+    // RENDER TIMES
+    function renderizarTimes() {
+      if (!window.ultimoSorteio) return;
+      const times = window.ultimoSorteio;
+      
+      let html = '<div class="card"><h3 class="card-title">Times Sorteados</h3><div class="times-grid">';
+      for (let i = 0; i < 4; i++) {
+        html += `<div class="time-card"><h4>Time ${i + 1}</h4><ul>`;
+        times[i].forEach(p => {
+          const badge = p.genero ? `<span class="badge badge-${p.genero}">${p.genero === 'masculino' ? '♂' : '♀'}</span>` : '';
+          html += `<li>${p.nome}${badge}</li>`;
+        });
+        html += '</ul></div>';
+      }
+      html += '</div>';
+      html += '<button class="btn btn-whatsapp btn-block" style="margin-top:16px;" onclick="compartilharWhatsApp()">📱 Compartilhar no WhatsApp</button>';
+      html += '</div>';
+      document.getElementById('resultadoSorteio').innerHTML = html;
+    }
+    
+    // BOTÃO SORTEAR
     document.getElementById('sortearTimes').addEventListener('click', async function(e) {
       e.preventDefault();
       try {
@@ -357,26 +455,36 @@
         const data = await res.json();
         const list = Array.isArray(data) ? data : (data.confirmed || []);
         const times = sortearTimes(list);
-        
-        let html = '<div class="times-grid">';
-        times.forEach((time, i) => {
-          html += `<div class="time-card"><h4>Time ${i + 1}</h4><ul>`;
-          time.forEach(p => {
-            const generoBadge = p.genero ? `<span class="badge badge-${p.genero}">${p.genero === 'masculino' ? '♂' : '♀'}</span>` : '';
-            html += `<li>${p.nome}${generoBadge}</li>`;
-          });
-          html += '</ul></div>';
-        });
-        html += '</div>';
-        html += '<div style="margin-top:16px;color:#34d399;font-weight:bold;">Versão corrigida 16/01/2026 - 4x6 perfeitos!</div>';
-        document.getElementById('resultadoSorteio').innerHTML = html;
+        window.ultimoSorteio = times;
+        document.getElementById('limparSorteio').style.display = 'inline-block';
+        renderizarTimes();
       } catch (err) {
         console.error('Erro sorteio:', err);
-        mostrarMensagem('Erro no sorteio.', 'erro');
       }
     });
     
-    // Limpar lista
+    // LIMPAR SORTEIO
+    document.getElementById('limparSorteio').addEventListener('click', function() {
+      document.getElementById('resultadoSorteio').innerHTML = '';
+      this.style.display = 'none';
+      window.ultimoSorteio = null;
+    });
+    
+    // WHATSAPP
+    function compartilharWhatsApp() {
+      if (!window.ultimoSorteio) return;
+      let mensagem = '*🏐 SORTEIO DOS TIMES - VÔLEI SEXTA 🏐*%0A%0A';
+      for (let i = 0; i < 4; i++) {
+        mensagem += `*Time ${i + 1}*%0A`;
+        window.ultimoSorteio[i].forEach(p => {
+          mensagem += `• ${p.nome}${p.genero ? ' (' + p.genero + ')' : ''}%0A`;
+        });
+        mensagem += '%0A';
+      }
+      window.open(`https://wa.me/5511986439388?text=${mensagem}`, '_blank');
+    }
+    
+    // LIMPAR LISTA
     document.getElementById('limparConfirmados').addEventListener('click', async function(e) {
       e.preventDefault();
       if (confirm('Limpar todos os confirmados?')) {
@@ -386,17 +494,110 @@
           if (data.sucesso) {
             mostrarMensagem('Lista limpa!', 'sucesso');
             atualizarLista();
-          } else {
-            mostrarMensagem('Erro ao limpar.', 'erro');
           }
         } catch (err) {
-          mostrarMensagem('Erro de conexão.', 'erro');
+          mostrarMensagem('Erro ao limpar.', 'erro');
         }
       }
     });
     
-    // Inicializa
+    // SISTEMA ADMIN
+    let adminToken = null;
+    let isAdmin = false;
+    
+    function abrirLogin() {
+      document.getElementById('loginModal').classList.add('ativo');
+      document.getElementById('loginUsuario').focus();
+    }
+    
+    function fecharLogin() {
+      document.getElementById('loginModal').classList.remove('ativo');
+      document.getElementById('loginUsuario').value = '';
+      document.getElementById('loginSenha').value = '';
+      document.getElementById('loginErro').style.display = 'none';
+    }
+    
+    async function fazerLogin() {
+      const usuario = document.getElementById('loginUsuario').value;
+      const senha = document.getElementById('loginSenha').value;
+      try {
+        const res = await fetch('/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usuario, senha })
+        });
+        const data = await res.json();
+        if (data.sucesso) {
+          adminToken = data.token;
+          isAdmin = true;
+          fecharLogin();
+          atualizarUIAdmin();
+          carregarEstatisticas();
+          mostrarMensagem('Login realizado com sucesso!', 'sucesso');
+        } else {
+          document.getElementById('loginErro').textContent = data.erro || 'Credenciais inválidas';
+          document.getElementById('loginErro').style.display = 'block';
+        }
+      } catch (err) {
+        document.getElementById('loginErro').textContent = 'Erro de conexão';
+        document.getElementById('loginErro').style.display = 'block';
+      }
+    }
+    
+    async function fazerLogout() {
+      if (adminToken) {
+        try {
+          await fetch('/logout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: adminToken })
+          });
+        } catch (e) {}
+      }
+      adminToken = null;
+      isAdmin = false;
+      atualizarUIAdmin();
+      carregarEstatisticas();
+      mostrarMensagem('Logout realizado', 'sucesso');
+    }
+    
+    function atualizarUIAdmin() {
+      document.getElementById('btnAdminSidebar').style.display = isAdmin ? 'none' : 'flex';
+      document.getElementById('btnLogoutSidebar').style.display = isAdmin ? 'flex' : 'none';
+      if (window.ultimoSorteio) renderizarTimes();
+    }
+    
+    // ESTATÍSTICAS
+    function carregarEstatisticas() {
+      fetch('/estatisticas')
+        .then(res => res.json())
+        .then(data => {
+          const ranking = data.ranking || [];
+          const total = ranking.reduce((sum, r) => sum + parseInt(r.totalconfirmacoes || 0, 10), 0);
+          const mensalistas = ranking.filter(r => r.tipo === 'mensalista').length;
+          const avulsos = ranking.filter(r => r.tipo === 'avulso').length;
+          
+          document.getElementById('statTotal').textContent = total;
+          document.getElementById('statJogadores').textContent = ranking.length;
+          document.getElementById('statMensalistas').textContent = mensalistas;
+          document.getElementById('statAvulsos').textContent = avulsos;
+          
+          const ul = document.getElementById('rankingList');
+          ul.innerHTML = '';
+          ranking.forEach((r, i) => {
+            const li = document.createElement('li');
+            li.className = 'ranking-item';
+            const presencas = parseInt(r.totalconfirmacoes || 0, 10);
+            li.innerHTML = `<div style="display:flex;align-items:center;"><span class="pos ${i < 3 ? 'top-3' : ''}">${i + 1}</span><span>${r.nome}</span></div><span class="count">${presencas} presenças</span>`;
+            ul.appendChild(li);
+          });
+        })
+        .catch(err => console.error('Erro estatísticas:', err));
+    }
+    
+    // INICIALIZA
     atualizarLista();
+    atualizarUIAdmin();
   </script>
 </body>
 </html>
