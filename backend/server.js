@@ -270,7 +270,6 @@ app.delete('/confirmados', async (req, res) => {
 // ESTATÍSTICAS (busca do histórico permanente)
 app.get('/estatisticas', async (req, res) => {
   try {
-    // Ranking geral
     const ranking = await pool.query(`
       SELECT 
         nome,
@@ -283,7 +282,6 @@ app.get('/estatisticas', async (req, res) => {
       ORDER BY total_confirmacoes DESC, nome ASC
     `);
     
-    // Resumo
     const totalConfirmacoes = await pool.query(`
       SELECT COUNT(*) as total FROM historico_confirmacoes
     `);
@@ -292,12 +290,10 @@ app.get('/estatisticas', async (req, res) => {
       SELECT COUNT(DISTINCT nome) as total FROM historico_confirmacoes
     `);
     
-    // Calcular média
     const total = parseInt(totalConfirmacoes.rows[0].total) || 0;
     const pessoas = parseInt(pessoasUnicas.rows[0].total) || 1;
     const media = pessoas > 0 ? (total / pessoas).toFixed(1) : 0;
     
-    // Por gênero
     const porGenero = await pool.query(`
       SELECT 
         genero,
@@ -315,12 +311,12 @@ app.get('/estatisticas', async (req, res) => {
       };
     });
     
-    // Formatar ranking para o frontend
+    // CORREÇÃO AQUI - garantir que o número seja convertido corretamente
     const rankingFormatado = ranking.rows.map(row => ({
       nome: row.nome,
       tipo: row.tipo,
       genero: row.genero,
-      totalconfirmacoes: parseInt(row.total_confirmacoes),
+      totalconfirmacoes: parseInt(row.total_confirmacoes) || 0,  // ADICIONAR || 0
       ultimaconfirmacao: row.ultima_confirmacao
     }));
     
@@ -338,6 +334,7 @@ app.get('/estatisticas', async (req, res) => {
     res.status(500).json({ erro: 'Erro ao buscar estatísticas' });
   }
 });
+
 
 // EDITAR NÚMERO DE PRESENÇAS (ADMIN)
 app.put('/estatisticas/pessoa/:nome', verificarAdmin, async (req, res) => {
