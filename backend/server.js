@@ -294,7 +294,24 @@ app.listen(PORT, () => {
 
 // Endpoint para retornar versão/commit atual (útil para confirmar deploys)
 app.get('/version', (req, res) => {
-  // tenta obter commit hash e branch via git
+  // 1) Allow explicit env var (set this in Render: COMMIT or DEPLOY_COMMIT)
+  const envCommit = process.env.COMMIT || process.env.DEPLOY_COMMIT || null;
+  const envBranch = process.env.BRANCH || process.env.DEPLOY_BRANCH || null;
+  if (envCommit || envBranch) return res.json({ commit: envCommit || null, branch: envBranch || null });
+
+  // 2) Try reading a generated file `public/version.json` created at build time
+  try {
+    const verPath = path.join(__dirname, 'public', 'version.json');
+    if (fs.existsSync(verPath)) {
+      const content = fs.readFileSync(verPath, 'utf8');
+      const json = JSON.parse(content);
+      return res.json({ commit: json.commit || null, branch: json.branch || null });
+    }
+  } catch (e) {
+    // ignore and fallback to git
+  }
+
+  // 3) Fallback: try to read via git (may not be available in some deploy environments)
   exec('git rev-parse --short HEAD', { cwd: __dirname }, (err, stdout) => {
     const commit = err ? null : (stdout || '').trim();
     exec('git rev-parse --abbrev-ref HEAD', { cwd: __dirname }, (err2, stdout2) => {
