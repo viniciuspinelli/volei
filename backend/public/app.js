@@ -1,5 +1,21 @@
 const API_URL = '';
 
+// Global handlers to capture errors and unhandled promise rejections
+window.addEventListener('unhandledrejection', function (e) {
+  try {
+    console.error('Unhandled promise rejection:', e.reason, e);
+  } catch (err) {
+    console.error('Error logging unhandledrejection', err);
+  }
+});
+window.addEventListener('error', function (e) {
+  try {
+    console.error('Window error:', e.error || e.message, e);
+  } catch (err) {
+    console.error('Error logging window error', err);
+  }
+});
+
 function atualizarLista() {
   fetch(`/confirmados`)
     .then(async res => {
