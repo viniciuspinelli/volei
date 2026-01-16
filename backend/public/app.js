@@ -137,16 +137,18 @@ document.getElementById('formConfirma').addEventListener('submit', function(e) {
 });
 // Função para sortear times equilibrando homens e mulheres
 function sortearTimes(confirmados) {
-  // Usa todos os confirmados disponíveis
-  confirmados = (confirmados || []).slice();
-  confirmados.forEach(c => { if (!c.genero) c.genero = 'masculino'; });
-  
-  const totalPessoas = confirmados.length;
+  // Limita o número máximo de participantes ao suporte do sistema: 24
+  const MAX_JOGADORES = 24;
   const NUM_TIMES = 4;
-  
+  const MAX_POR_TIME = 6;
+
+  confirmados = (confirmados || []).slice(0, MAX_JOGADORES);
+  confirmados.forEach(c => { if (!c.genero) c.genero = 'masculino'; });
+
+  // Separa por gênero e embaralha
   const homens = confirmados.filter(c => c.genero === 'masculino').slice();
   const mulheres = confirmados.filter(c => c.genero === 'feminino').slice();
-  
+
   function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -156,36 +158,43 @@ function sortearTimes(confirmados) {
   shuffle(homens);
   shuffle(mulheres);
 
-  // 4 times com distribuição dinâmica
-  const times = [[], [], [], []];
-  
-  // Distribui mulheres primeiro - uma por time (garante que cada time tenha mulher)
-  for (let i = 0; i < Math.min(NUM_TIMES, mulheres.length); i++) {
-    times[i].push(mulheres[i]);
+  // Inicializa times
+  const times = Array.from({ length: NUM_TIMES }, () => []);
+
+  // Função utilitária: encontra índice do time com menos pessoas (< MAX_POR_TIME)
+  function acharTimeComMenosPessoas() {
+    let idx = -1;
+    let min = Infinity;
+    for (let i = 0; i < NUM_TIMES; i++) {
+      if (times[i].length < MAX_POR_TIME && times[i].length < min) {
+        min = times[i].length;
+        idx = i;
+      }
+    }
+    return idx;
   }
-  
-  // Distribui mulheres restantes entre os times
-  for (let i = NUM_TIMES; i < mulheres.length; i++) {
-    const idx = i % NUM_TIMES;
+
+  // Distribui mulheres primeiro, tentando colocar uma por time quando possível
+  for (let i = 0; i < mulheres.length; i++) {
+    const idx = acharTimeComMenosPessoas();
+    if (idx === -1) break; // todos cheios
     times[idx].push(mulheres[i]);
   }
-  
-  // Distribui homens entre os times
+
+  // Distribui homens preenchendo os times com menos pessoas (sem ultrapassar MAX_POR_TIME)
   for (let i = 0; i < homens.length; i++) {
-    const idx = i % NUM_TIMES;
+    const idx = acharTimeComMenosPessoas();
+    if (idx === -1) break;
     times[idx].push(homens[i]);
   }
 
-  // Encontra o tamanho máximo entre os times
-  const tamanhoMaximo = Math.max(...times.map(t => t.length));
-  
-  // Preenche todos os times até igualar o tamanho máximo com "Vaga Livre"
+  // Preenche com 'Vaga Livre' até MAX_POR_TIME em cada time
   for (let i = 0; i < NUM_TIMES; i++) {
-    while (times[i].length < tamanhoMaximo) {
+    while (times[i].length < MAX_POR_TIME) {
       times[i].push({ nome: 'Vaga Livre', genero: '', tipo: '' });
     }
   }
-  
+
   return times;
 }
 
