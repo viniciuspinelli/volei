@@ -268,7 +268,7 @@
           <h3 class="card-title">Ranking de Presenças</h3>
           <ul class="ranking-list" id="rankingList"></ul>
           <div class="empty-state" id="emptyRanking" style="display:none;">
-            Nenhum dado de estatísticas ainda. Faça login como admin para visualizar.
+            Nenhum dado de estatísticas disponível.
           </div>
         </div>
       </section>
@@ -681,32 +681,20 @@
       if (window.ultimoSorteio) renderizarTimes();
     }
     
-    // ESTATÍSTICAS COM TOKEN ADMIN
+    // ESTATÍSTICAS - CORRIGIDO CAMPO total_confirmacoes
     async function carregarEstatisticas() {
-      console.log('Carregando estatísticas... isAdmin:', isAdmin, 'token:', adminToken);
-      
       try {
-        const headers = {
-          'Content-Type': 'application/json'
-        };
-        
-        // Se tiver token, envia no header
+        const headers = { 'Content-Type': 'application/json' };
         if (adminToken) {
           headers['Authorization'] = `Bearer ${adminToken}`;
         }
         
         const res = await fetch('/estatisticas', { headers });
-        
-        console.log('Response status:', res.status);
-        
-        if (!res.ok) {
-          throw new Error(`Erro HTTP: ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`Erro HTTP: ${res.status}`);
         
         const data = await res.json();
-        console.log('Dados recebidos:', data);
-        
         const ranking = data.ranking || [];
+        const resumo = data.resumo || {};
         
         if (ranking.length === 0) {
           document.getElementById('rankingList').style.display = 'none';
@@ -721,21 +709,24 @@
         document.getElementById('rankingList').style.display = 'block';
         document.getElementById('emptyRanking').style.display = 'none';
         
-        const total = ranking.reduce((sum, r) => sum + parseInt(r.totalconfirmacoes || 0, 10), 0);
+        // Usar dados do resumo do backend
+        document.getElementById('statTotal').textContent = resumo.totalConfirmacoes || 0;
+        document.getElementById('statJogadores').textContent = resumo.pessoasUnicas || 0;
+        
+        // Contar mensalistas e avulsos do ranking
         const mensalistas = ranking.filter(r => r.tipo === 'mensalista').length;
         const avulsos = ranking.filter(r => r.tipo === 'avulso').length;
-        
-        document.getElementById('statTotal').textContent = total;
-        document.getElementById('statJogadores').textContent = ranking.length;
         document.getElementById('statMensalistas').textContent = mensalistas;
         document.getElementById('statAvulsos').textContent = avulsos;
         
+        // Renderizar ranking
         const ul = document.getElementById('rankingList');
         ul.innerHTML = '';
         ranking.forEach((r, i) => {
           const li = document.createElement('li');
           li.className = 'ranking-item';
-          const presencas = parseInt(r.totalconfirmacoes || 0, 10);
+          // CORRIGIDO: usar total_confirmacoes (com underscore)
+          const presencas = parseInt(r.total_confirmacoes || 0, 10);
           li.innerHTML = `<div style="display:flex;align-items:center;"><span class="pos ${i < 3 ? 'top-3' : ''}">${i + 1}</span><span>${r.nome}</span></div><span class="count">${presencas} presenças</span>`;
           ul.appendChild(li);
         });
@@ -743,7 +734,7 @@
         console.error('Erro ao carregar estatísticas:', err);
         document.getElementById('rankingList').style.display = 'none';
         document.getElementById('emptyRanking').style.display = 'block';
-        document.getElementById('emptyRanking').textContent = 'Erro ao carregar estatísticas. Verifique o console.';
+        document.getElementById('emptyRanking').textContent = 'Erro ao carregar estatísticas.';
       }
     }
     
