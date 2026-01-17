@@ -472,27 +472,45 @@ function sortearTimes(confirmados) {
   const totalPessoas = confirmados.length;
   const numTimes = totalPessoas <= 18 ? 3 : 4;
   
+  // CALCULAR QUANTAS PESSOAS CADA TIME DEVE TER
+  const pessoasPorTime = Math.ceil(totalPessoas / numTimes);
+  
   // Criar times vazios
   const times = [];
   for (let i = 0; i < numTimes; i++) {
     times.push([]);
   }
   
-  // DISTRIBUIR MULHERES DE FORMA EQUILIBRADA (round-robin)
-  mulheres.forEach((mulher, index) => {
-    times[index % numTimes].push(mulher);
-  });
+  // DISTRIBUIR MULHERES EQUILIBRADAMENTE
+  let timeIndex = 0;
+  for (let i = 0; i < mulheres.length; i++) {
+    // Adiciona mulher ao time atual
+    times[timeIndex].push(mulheres[i]);
+    
+    // Vai para o próximo time
+    timeIndex = (timeIndex + 1) % numTimes;
+  }
   
-  // DISTRIBUIR HOMENS DE FORMA EQUILIBRADA (round-robin)
-  homens.forEach((homem, index) => {
-    times[index % numTimes].push(homem);
-  });
+  // DISTRIBUIR HOMENS EQUILIBRADAMENTE
+  timeIndex = 0;
+  for (let i = 0; i < homens.length; i++) {
+    // Procura o time com menos pessoas (para equilibrar)
+    let menorTime = 0;
+    let menorTamanho = times[0].length;
+    
+    for (let t = 1; t < numTimes; t++) {
+      if (times[t].length < menorTamanho) {
+        menorTamanho = times[t].length;
+        menorTime = t;
+      }
+    }
+    
+    // Adiciona homem ao time com menos pessoas
+    times[menorTime].push(homens[i]);
+  }
   
-  // CALCULAR O TAMANHO MÁXIMO ATUAL
+  // PREENCHER COM VAGAS LIVRES ATÉ TODOS TEREM O MESMO TAMANHO
   const maxSize = Math.max(...times.map(t => t.length));
-  
-  // PREENCHER APENAS SE O TIME TIVER MENOS QUE O MÁXIMO
-  // (não preenche se já estiver balanceado)
   for (let i = 0; i < numTimes; i++) {
     while (times[i].length < maxSize) {
       times[i].push({nome: 'Vaga Livre', genero: '', tipo: ''});
