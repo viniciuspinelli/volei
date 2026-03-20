@@ -69,6 +69,26 @@ function removerConfirmado(id) {
     });
 }
 
+function removerReserva(id) {
+  if (!confirm('Remover esta pessoa da lista de reservas?')) return;
+  fetch(`/reservas/${id}`, { method: 'DELETE' })
+    .then(res => res.json())
+    .then(data => {
+      if (data.sucesso) {
+        document.getElementById('mensagem').textContent = 'Removido da lista de reservas.';
+        document.getElementById('mensagem').style.color = '#27ae60';
+        atualizarLista();
+      } else if (data.erro) {
+        document.getElementById('mensagem').textContent = data.erro;
+        document.getElementById('mensagem').style.color = '#c0392b';
+      }
+    })
+    .catch(() => {
+      document.getElementById('mensagem').textContent = 'Erro ao remover.';
+      document.getElementById('mensagem').style.color = '#c0392b';
+    });
+}
+
 document.getElementById('formConfirma').addEventListener('submit', function(e) {
   e.preventDefault();
   const nome = document.getElementById('nome').value.trim();

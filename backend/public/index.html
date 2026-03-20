@@ -403,15 +403,18 @@
         const divReservas = document.getElementById('listaReservas');
         if (cardReservas && divReservas) {
           if (waitlist.length > 0) {
-            let html = '<h3 class="card-title">📋 Reservas <span class="contador-badge">' + waitlist.length + '</span></h3><ol style="padding-left: 20px; margin: 12px 0;">';
-            waitlist.forEach(w => {
-              html += `<li style="margin-bottom: 8px; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
-                <span>${w.nome}</span>
-                <span class="badge badge-${w.tipo}">${w.tipo === 'mensalista' ? 'M' : 'A'}</span>
-                ${w.genero ? `<span class="badge badge-${w.genero}">${w.genero === 'masculino' ? '♂' : '♀'}</span>` : ''}
+            let html = '<h3 class="card-title">📋 Reservas <span class="contador-badge">' + waitlist.length + '</span></h3><ul class="lista-confirmados" style="margin: 12px 0;">';
+            waitlist.forEach((w, idx) => {
+              html += `<li class="lista-item ${w.tipo === 'avulso' ? 'avulso' : ''}">
+                <div class="info">
+                  <span class="nome">${idx + 1}. ${w.nome}</span>
+                  <span class="badge badge-${w.tipo}">${w.tipo === 'mensalista' ? 'M' : 'A'}</span>
+                  ${w.genero ? `<span class="badge badge-${w.genero}">${w.genero === 'masculino' ? '♂' : '♀'}</span>` : ''}
+                </div>
+                <button class="btn-remove" onclick="removerReserva(${w.id})" title="Remover ${w.nome}">✕</button>
               </li>`;
             });
-            html += '</ol>';
+            html += '</ul>';
             divReservas.innerHTML = html;
             cardReservas.style.display = 'block';
           } else {
@@ -432,6 +435,23 @@
         const data = await res.json();
         if (data.sucesso) {
           mostrarMensagem('Removido com sucesso!', 'sucesso');
+          atualizarLista();
+        } else {
+          mostrarMensagem(data.erro || 'Erro ao remover.', 'erro');
+        }
+      } catch (err) {
+        mostrarMensagem('Erro de conexão.', 'erro');
+      }
+    }
+    
+    // REMOVER DE RESERVAS
+    async function removerReserva(id) {
+      if (!confirm('Remover esta pessoa da lista de reservas?')) return;
+      try {
+        const res = await fetch(`/reservas/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.sucesso) {
+          mostrarMensagem('Removido da lista de reservas!', 'sucesso');
           atualizarLista();
         } else {
           mostrarMensagem(data.erro || 'Erro ao remover.', 'erro');

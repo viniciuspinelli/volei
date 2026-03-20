@@ -319,6 +319,24 @@ app.delete('/confirmados', async (req, res) => {
   }
 });
 
+// REMOVER DA LISTA DE RESERVAS
+app.delete('/reservas/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const result = await pool.query('DELETE FROM reservas WHERE id = $1', [id]);
+    
+    if (result.rowCount > 0) {
+      res.json({ sucesso: true });
+    } else {
+      res.status(404).json({ erro: 'Reserva não encontrada' });
+    }
+  } catch (err) {
+    console.error('Erro ao remover reserva:', err);
+    res.status(500).json({ erro: 'Erro ao remover da lista de reservas' });
+  }
+});
+
 // ESTATÍSTICAS (busca do histórico permanente)
 app.get('/estatisticas', async (req, res) => {
   try {
