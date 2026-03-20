@@ -33,13 +33,17 @@ function atualizarLista() {
           ul.appendChild(li);
         });
 
-      const waitEl = document.getElementById('resultadoSorteio');
-      // use resultadoSorteio area for waitlist display when not showing teams
+      const waitEl = document.getElementById('listaReservas');
+      const cardReservas = document.getElementById('cardReservas');
+      
       let waitHtml = '';
       if (waitlist.length > 0) {
-        waitHtml += '<div class="mt-3" style="margin-top: 16px; padding: 12px; background: rgba(255, 213, 79, 0.05); border-left: 3px solid #ffd54f; border-radius: 6px;"><strong style="color: #ffd54f; display: block; margin-bottom: 8px;">📋 Reservas (' + waitlist.length + ')</strong><ol class="ms-3 mt-2" style="color: #e7f3ff; padding-left: 20px; margin: 8px 0;">';
+        waitHtml += '<strong style="color: #ffd54f; display: block; margin-bottom: 8px;">📋 Reservas (' + waitlist.length + ')</strong><ol style="color: #e7f3ff; padding-left: 20px; margin: 8px 0;">';
         waitlist.forEach(w => { waitHtml += `<li style="margin-bottom: 4px; color: #cbd5e1;">${w.nome} <span style="color: #94a3b8; font-size: 12px;">(${w.tipo})</span></li>` });
-        waitHtml += '</ol></div>';
+        waitHtml += '</ol>';
+        cardReservas.style.display = 'block';
+      } else {
+        cardReservas.style.display = 'none';
       }
       waitEl.innerHTML = waitHtml;
     });
