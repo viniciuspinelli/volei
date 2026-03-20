@@ -128,6 +128,7 @@
     .mensagem { text-align: center; padding: var(--spacing-md); margin-bottom: var(--spacing-md); border-radius: var(--radius-md); font-size: 14px; min-height: 20px; }
     .mensagem.sucesso { background: rgba(52,211,153,0.1); color: #34d399; }
     .mensagem.erro { background: rgba(239,68,68,0.1); color: var(--danger); }
+    .mensagem.aviso { background: rgba(255,177,66,0.1); color: #ffa500; font-weight: 600; }
     
     /* BOTTOM NAV MOBILE */
     .bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-secondary); border-top: 1px solid rgba(255,255,255,0.05); padding: var(--spacing-sm) 0; z-index: 1000; }
@@ -233,6 +234,9 @@
           <h3 class="card-title">Confirmados <span class="contador-badge" id="contadorConfirmados">0</span></h3>
           <button class="btn btn-danger" id="limparConfirmados" style="margin-bottom: 16px;">Limpar Lista</button>
           <ul class="lista-confirmados" id="listaConfirmados"></ul>
+        </div>
+        <div class="card" id="cardReservas" style="display: none;">
+          <div id="listaReservas"></div>
         </div>
       </section>
       
@@ -354,6 +358,7 @@
         const res = await fetch('/confirmados');
         const data = await res.json();
         let confirmed = Array.isArray(data) ? data.slice(0, 24) : (data.confirmed || []).slice(0, 24);
+        let waitlist = Array.isArray(data) ? data.slice(24) : (data.waitlist || []);
         
         const contador = document.getElementById('contadorConfirmados');
         if (contador) contador.textContent = confirmed.length;
@@ -391,6 +396,28 @@
             li.appendChild(btn);
             ul.appendChild(li);
           });
+        }
+        
+        // RENDERIZAR RESERVAS
+        const cardReservas = document.getElementById('cardReservas');
+        const divReservas = document.getElementById('listaReservas');
+        if (cardReservas && divReservas) {
+          if (waitlist.length > 0) {
+            let html = '<h3 class="card-title">📋 Reservas <span class="contador-badge">' + waitlist.length + '</span></h3><ol style="padding-left: 20px; margin: 12px 0;">';
+            waitlist.forEach(w => {
+              html += `<li style="margin-bottom: 8px; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
+                <span>${w.nome}</span>
+                <span class="badge badge-${w.tipo}">${w.tipo === 'mensalista' ? 'M' : 'A'}</span>
+                ${w.genero ? `<span class="badge badge-${w.genero}">${w.genero === 'masculino' ? '♂' : '♀'}</span>` : ''}
+              </li>`;
+            });
+            html += '</ol>';
+            divReservas.innerHTML = html;
+            cardReservas.style.display = 'block';
+          } else {
+            divReservas.innerHTML = '';
+            cardReservas.style.display = 'none';
+          }
         }
       } catch (err) {
         console.error('Erro lista:', err);
@@ -430,7 +457,11 @@
         });
         const data = await res.json();
         if (res.ok) {
-          mostrarMensagem('Presença confirmada!', 'sucesso');
+          if (data.reserva) {
+            mostrarMensagem(`${nome}, você foi adicionado à lista de RESERVAS! Os times estão completos.`, 'aviso');
+          } else {
+            mostrarMensagem('Presença confirmada!', 'sucesso');
+          }
           this.reset();
           atualizarLista();
         } else {
