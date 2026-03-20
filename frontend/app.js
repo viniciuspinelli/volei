@@ -37,8 +37,8 @@ function atualizarLista() {
       // use resultadoSorteio area for waitlist display when not showing teams
       let waitHtml = '';
       if (waitlist.length > 0) {
-        waitHtml += '<div class="mt-3"><strong>Lista de Espera</strong><ol class="ms-3 mt-2" style="color:#fff">';
-        waitlist.forEach(w => { waitHtml += `<li>${w.nome} (${w.tipo})</li>` });
+        waitHtml += '<div class="mt-3" style="margin-top: 16px; padding: 12px; background: rgba(255, 213, 79, 0.05); border-left: 3px solid #ffd54f; border-radius: 6px;"><strong style="color: #ffd54f; display: block; margin-bottom: 8px;">📋 Reservas (' + waitlist.length + ')</strong><ol class="ms-3 mt-2" style="color: #e7f3ff; padding-left: 20px; margin: 8px 0;">';
+        waitlist.forEach(w => { waitHtml += `<li style="margin-bottom: 4px; color: #cbd5e1;">${w.nome} <span style="color: #94a3b8; font-size: 12px;">(${w.tipo})</span></li>` });
         waitHtml += '</ol></div>';
       }
       waitEl.innerHTML = waitHtml;
@@ -82,7 +82,15 @@ document.getElementById('formConfirma').addEventListener('submit', function(e) {
     .then(res => res.json())
     .then(data => {
       if (data.sucesso) {
-        mensagem.textContent = 'Presença confirmada!';
+        if (data.reserva) {
+          // Mostrar popup informando que foi adicionado às reservas
+          mostrarPopupReserva(nome);
+          mensagem.textContent = 'Adicionado à lista de reservas - times estão completos!';
+          mensagem.style.color = '#f59e0b';
+        } else {
+          mensagem.textContent = 'Presença confirmada!';
+          mensagem.style.color = '#27ae60';
+        }
         atualizarLista();
         document.getElementById('formConfirma').reset();
       } else if (data.erro) {
@@ -91,6 +99,94 @@ document.getElementById('formConfirma').addEventListener('submit', function(e) {
       }
     });
 });
+
+function mostrarPopupReserva(nome) {
+  // Criar overlay do modal
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  `;
+  
+  // Criar modal
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 400px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(255, 213, 79, 0.2);
+    text-align: center;
+    animation: slideUp 0.3s ease-out;
+  `;
+  
+  modal.innerHTML = `
+    <div style="margin-bottom: 16px; font-size: 32px;">⏳</div>
+    <h2 style="color: #ffd54f; font-size: 20px; margin: 0 0 12px 0; font-weight: 600;">Lista de Reservas</h2>
+    <p style="color: #cbd5e1; margin: 0 0 16px 0; font-size: 14px; line-height: 1.5;">
+      ${nome}, sua presença foi confirmada, mas os times estão todos completos no momento! 
+      <br><br>
+      <strong style="color: #ffd54f;">Você foi adicionado à lista de reservas</strong> e será chamado assim que houver uma vaga!
+    </p>
+    <button id="fecharPopup" style="
+      background: linear-gradient(90deg, #ffd54f, #ffb300);
+      color: #000;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+      width: 100%;
+      transition: filter 0.3s;
+    " onmouseover="this.style.filter='brightness(0.95)'" onmouseout="this.style.filter='brightness(1)'">
+      OK
+    </button>
+  `;
+  
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  
+  // Fechar modal ao clicar no botão
+  document.getElementById('fecharPopup').addEventListener('click', function() {
+    overlay.remove();
+  });
+  
+  // Fechar modal ao clicar fora dele
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) {
+      overlay.remove();
+    }
+  });
+  
+  // Adicionar animação CSS se não existir
+  if (!document.getElementById('animacaoSlideUp')) {
+    const style = document.createElement('style');
+    style.id = 'animacaoSlideUp';
+    style.textContent = `
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
 // Função para sortear times equilibrando homens e mulheres
 function sortearTimes(confirmados) {
   // Usa todos os confirmados disponíveis

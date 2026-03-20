@@ -36,6 +36,7 @@ async function initDB() {
       console.log('Estrutura antiga detectada. Recriando tabelas...');
       await client.query('DROP TABLE IF EXISTS admin_tokens CASCADE');
       await client.query('DROP TABLE IF EXISTS admins CASCADE');
+      await client.query('DROP TABLE IF EXISTS reservas CASCADE');
       await client.query('DROP TABLE IF EXISTS confirmados_atual CASCADE');
       await client.query('DROP TABLE IF EXISTS historico_confirmacoes CASCADE');
     }
@@ -79,6 +80,17 @@ async function initDB() {
         admin_id INTEGER REFERENCES admins(id) ON DELETE CASCADE,
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         expira_em TIMESTAMP
+      )
+    `);
+    
+    // Criar tabela de reservas
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS reservas (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(255) NOT NULL,
+        tipo VARCHAR(50) NOT NULL,
+        genero VARCHAR(50),
+        data_reserva TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
     
@@ -194,7 +206,7 @@ app.get('/verificar-token', async (req, res) => {
   }
 });
 
-// CONFIRMAR PRESENÇA (salva em AMBAS as tabelas)
+// CONFIRMAR PRESENÇA (salva em AMBAS as tabelas ou em reservas)
 app.post('/confirmar', async (req, res) => {
   const { nome, tipo, genero } = req.body;
   
@@ -208,7 +220,19 @@ app.post('/confirmar', async (req, res) => {
     const total = parseInt(countResult.rows[0].total);
     
     if (total >= 24) {
-      return res.status(400).json({ erro: 'Limite de 24 confirmados atingido!' });
+      // Adicionar à lista de reservas
+      const resultReserva = await pool.query(
+        'INSERT INTO reservas (nome, tipo, genero) VALUES ($1, $2, $3) RETURNING *',
+        [nome, tipo, genero]
+      );
+      
+      // Salvar no histórico (permanente)
+      await pool.query(
+        'INSERT INTO historico_confirmacoes (nome, tipo, genero) VALUES ($1, $2, $3)',
+        [nome, tipo, genero]
+      );
+      
+      return res.json({ sucesso: true, reserva: true, confirmado: resultReserva.rows[0] });
     }
     
     // Salvar na lista atual (temporária)
@@ -223,20 +247,28 @@ app.post('/confirmar', async (req, res) => {
       [nome, tipo, genero]
     );
     
-    res.json({ sucesso: true, confirmado: resultAtual.rows[0] });
+    res.json({ sucesso: true, reserva: false, confirmado: resultAtual.rows[0] });
   } catch (err) {
     console.error('Erro ao confirmar:', err);
     res.status(500).json({ erro: 'Erro ao confirmar presença' });
   }
 });
 
-// LISTAR CONFIRMADOS ATUAIS
+// LISTAR CONFIRMADOS E RESERVAS
 app.get('/confirmados', async (req, res) => {
   try {
-    const result = await pool.query(
+    const confirmed = await pool.query(
       'SELECT * FROM confirmados_atual ORDER BY data_confirmacao ASC LIMIT 24'
     );
-    res.json(result.rows);
+    
+    const waitlist = await pool.query(
+      'SELECT * FROM reservas ORDER BY data_reserva ASC'
+    );
+    
+    res.json({
+      confirmed: confirmed.rows,
+      waitlist: waitlist.rows
+    });
   } catch (err) {
     console.error('Erro ao listar:', err);
     res.status(500).json({ erro: 'Erro ao listar confirmados' });
@@ -248,7 +280,26 @@ app.delete('/confirmados/:id', async (req, res) => {
   const { id } = req.params;
   
   try {
-    await pool.query('DELETE FROM confirmados_atual WHERE id = $1', [id]);
+    const result = await pool.query('DELETE FROM confirmados_atual WHERE id = $1', [id]);
+    
+    if (result.rowCount > 0) {
+      // Se um confirmado foi removido, promover o primeiro da lista de reservas
+      const reserva = await pool.query(
+        'SELECT * FROM reservas ORDER BY data_reserva ASC LIMIT 1'
+      );
+      
+      if (reserva.rows.length > 0) {
+        const r = reserva.rows[0];
+        // Adicionar à lista de confirmados
+        await pool.query(
+          'INSERT INTO confirmados_atual (nome, tipo, genero) VALUES ($1, $2, $3)',
+          [r.nome, r.tipo, r.genero]
+        );
+        // Remover da lista de reservas
+        await pool.query('DELETE FROM reservas WHERE id = $1', [r.id]);
+      }
+    }
+    
     res.json({ sucesso: true });
   } catch (err) {
     console.error('Erro ao remover:', err);
@@ -260,6 +311,7 @@ app.delete('/confirmados/:id', async (req, res) => {
 app.delete('/confirmados', async (req, res) => {
   try {
     await pool.query('DELETE FROM confirmados_atual');
+    await pool.query('DELETE FROM reservas');
     res.json({ sucesso: true });
   } catch (err) {
     console.error('Erro ao limpar:', err);
