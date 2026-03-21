@@ -919,12 +919,14 @@ function compartilharWhatsApp() {
       e.preventDefault();
       if (confirm('Limpar todos os confirmados?')) {
         try {
+          // 1. PRIMEIRO: salvar avulsos no histórico
+          await finalizarDia();
+          
+          // 2. DEPOIS: limpar confirmados
           const res = await fetch('/confirmados', { method: 'DELETE' });
           const data = await res.json();
           if (data.sucesso) {
             mostrarMensagem('Lista limpa!', 'sucesso');
-            // Automaticamente salva avulsos no histórico
-            await finalizarDia();
             atualizarLista();
           }
         } catch (err) {
