@@ -830,6 +830,28 @@ app.post('/historico-avulsos/:id/nao-pago', verificarAdmin, async (req, res) => 
   }
 });
 
+// DELETAR AVULSO DO HISTÓRICO
+app.delete('/historico-avulsos/:id', verificarAdmin, async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const result = await pool.query(
+      'DELETE FROM historico_avulsos WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ erro: 'Avulso não encontrado' });
+    }
+    
+    console.log(`🗑️ Avulso deletado do histórico: ${result.rows[0].nome}`);
+    res.json({ sucesso: true, mensagem: 'Avulso deletado com sucesso', avulso: result.rows[0] });
+  } catch (err) {
+    console.error('Erro ao deletar avulso:', err);
+    res.status(500).json({ erro: 'Erro ao deletar avulso' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });

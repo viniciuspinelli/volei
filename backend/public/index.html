@@ -214,8 +214,7 @@
 
         <div class="card">
           <h3 class="card-title">Total de Avulsos <span class="contador-badge" id="totalAvulsosGeral">0</span></h3>
-          <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 12px;">Todos os avulsos que confirmaram (atuais + histórico)</p>
-          <button id="btnFinalizarDia" class="btn btn-primary btn-block" style="margin-bottom: 12px;">📅 Finalizar Dia e Salvar Avulsos</button>
+          <p style="color: var(--text-muted); font-size: 13px;">Todos os avulsos que confirmaram (atuais + histórico)</p>
         </div>
         
         <div class="card">
@@ -915,7 +914,7 @@ function compartilharWhatsApp() {
   window.open(`https://wa.me/5511986439388?text=${encodeURIComponent(mensagem)}`, '_blank');
 }
     
-    // LIMPAR LISTA
+    // LIMPAR LISTA (agora finaliza dia automaticamente)
     document.getElementById('limparConfirmados').addEventListener('click', async function(e) {
       e.preventDefault();
       if (confirm('Limpar todos os confirmados?')) {
@@ -924,6 +923,8 @@ function compartilharWhatsApp() {
           const data = await res.json();
           if (data.sucesso) {
             mostrarMensagem('Lista limpa!', 'sucesso');
+            // Automaticamente salva avulsos no histórico
+            await finalizarDia();
             atualizarLista();
           }
         } catch (err) {
@@ -1232,13 +1233,27 @@ function compartilharWhatsApp() {
             info.appendChild(statusBadge);
             li.appendChild(info);
             
-            const btn = document.createElement('button');
-            btn.className = 'btn btn-secondary';
-            btn.style.padding = '6px 10px';
-            btn.textContent = a.pago ? 'Marcar Não Pago' : 'Marcar Pago';
-            btn.addEventListener('click', () => marcarHistoricoComoPago(a.id, !a.pago));
+            const btnContainer = document.createElement('div');
+            btnContainer.style.display = 'flex';
+            btnContainer.style.gap = '8px';
             
-            li.appendChild(btn);
+            const btnPago = document.createElement('button');
+            btnPago.className = 'btn btn-secondary';
+            btnPago.style.padding = '6px 10px';
+            btnPago.style.fontSize = '12px';
+            btnPago.textContent = a.pago ? 'Não Pago' : 'Pago';
+            btnPago.addEventListener('click', () => marcarHistoricoComoPago(a.id, !a.pago));
+            
+            const btnDelete = document.createElement('button');
+            btnDelete.className = 'btn btn-danger';
+            btnDelete.style.padding = '6px 10px';
+            btnDelete.style.fontSize = '12px';
+            btnDelete.textContent = '🗑️ Deletar';
+            btnDelete.addEventListener('click', () => deletarAvulsoHistorico(a.id));
+            
+            btnContainer.appendChild(btnPago);
+            btnContainer.appendChild(btnDelete);
+            li.appendChild(btnContainer);
             ulHistorico.appendChild(li);
           });
           
@@ -1314,17 +1329,45 @@ function compartilharWhatsApp() {
       }
     }
 
-    // FINALIZAR DIA (salvar avulsos para histórico e limpar confirmados)
-    async function finalizarDia() {
+    // DELETAR AVULSO DO HISTÓRICO
+    async function deletarAvulsoHistorico(id) {
       const token = localStorage.getItem('adminToken');
       if (!token) {
         alert('Você precisa estar logado como admin');
         return;
       }
       
-      const confirmacao = confirm('⚠️ Tem certeza que deseja finalizar o dia?\n\nIsso vai:\n1. Mover todos os avulsos para o histórico\n2. Limpar a lista de confirmados');
+      if (!confirm('Tem certeza que deseja deletar este avulso permanentemente?')) {
+        return;
+      }
       
-      if (!confirmacao) return;
+      try {
+        const res = await fetch(`/historico-avulsos/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          mostrarMensagem('Avulso deletado ✅', 'sucesso');
+          atualizarListaAvulsos();
+        } else {
+          mostrarMensagem(data.erro || 'Erro ao deletar', 'erro');
+        }
+      } catch (err) {
+        console.error(err);
+        mostrarMensagem('Erro ao deletar avulso', 'erro');
+      }
+    }
+
+    // FINALIZAR DIA (salvar avulsos para histórico e limpar confirmados)
+    // FINALIZAR DIA (AUTOMÁTICO ao limpar confirmados)
+    async function finalizarDia() {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        console.log('ℹ️ Finalizador de dia: usuário não logado como admin');
+        return;
+      }
       
       try {
         const res = await fetch('/finalizar-dia', {
@@ -1334,14 +1377,14 @@ function compartilharWhatsApp() {
         const data = await res.json();
         
         if (res.ok) {
-          mostrarMensagem(`✅ ${data.mensagem}`, 'sucesso');
+          console.log(`✅ ${data.mensagem}`);
+          mostrarMensagem(`${data.avulsosSalvos} avulsos salvos no histórico ✅`, 'sucesso');
           setTimeout(() => atualizarListaAvulsos(), 500);
         } else {
-          mostrarMensagem(data.erro || 'Erro ao finalizar', 'erro');
+          console.error('Erro ao finalizar:', data.erro);
         }
       } catch (err) {
-        console.error('Erro:', err);
-        mostrarMensagem('Erro ao finalizar dia', 'erro');
+        console.error('Erro ao finalizar dia:', err);
       }
     }
 
