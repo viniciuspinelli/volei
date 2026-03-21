@@ -211,11 +211,17 @@
           <h1 class="page-title">💰 Controle de Avulsos</h1>
           <p class="page-subtitle">Avulsos que confirmaram - para controle de cobrança</p>
         </div>
+
+        <div class="card">
+          <h3 class="card-title">Total de Avulsos <span class="contador-badge" id="totalAvulsosGeral">0</span></h3>
+          <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 12px;">Todos os avulsos que confirmaram (atuais + histórico)</p>
+          <button id="btnFinalizarDia" class="btn btn-primary btn-block" style="margin-bottom: 12px;">📅 Finalizar Dia e Salvar Avulsos</button>
+        </div>
         
         <div class="card">
           <h3 class="card-title">Avulsos Confirmados <span class="contador-badge" id="totalAvulsos">0</span></h3>
           <div style="margin-bottom: 12px;">
-            <label style="color: var(--muted); font-size: 13px; margin-right: 12px;">
+            <label style="color: var(--text-muted); font-size: 13px; margin-right: 12px;">
               <input type="checkbox" id="filtrarPagos" style="margin-right: 4px;"> Mostrar apenas pagos
             </label>
           </div>
@@ -225,6 +231,12 @@
         <div class="card">
           <h3 class="card-title">Avulsos em Reserva <span class="contador-badge" id="totalReservasAvulsos">0</span></h3>
           <ul class="lista-confirmados" id="listaReservasAvulsos"></ul>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Histórico de Avulsos <span class="contador-badge" id="totalHistoricoAvulsos">0</span></h3>
+          <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 12px;">Avulsos de jogos anteriores (para controle de pagamento)</p>
+          <ul class="lista-confirmados" id="listaHistoricoAvulsos"></ul>
         </div>
       </section>
       
@@ -920,6 +932,12 @@ function compartilharWhatsApp() {
       }
     });
 
+    // FINALIZAR DIA
+    const btnFinalizarDia = document.getElementById('btnFinalizarDia');
+    if (btnFinalizarDia) {
+      btnFinalizarDia.addEventListener('click', finalizarDia);
+    }
+
     
     // REMOVER PESSOA DAS ESTATÍSTICAS (ADMIN)
     async function removerDasEstatisticas(nome) {
@@ -1053,12 +1071,16 @@ function compartilharWhatsApp() {
         
         const confirmados = data.confirmados || [];
         const reservas = data.reservas || [];
+        const historico = data.historico || [];
         
-        console.log(`✅ Avulsos confirmados: ${confirmados.length}, Reservas: ${reservas.length}`);
+        console.log(`✅ Avulsos confirmados: ${confirmados.length}, Reservas: ${reservas.length}, Histórico: ${historico.length}`);
         
-        // Atualizar contador
+        // Atualizar contadores
+        const totalGeral = confirmados.length + reservas.length + historico.length;
         document.getElementById('totalAvulsos').textContent = confirmados.length;
         document.getElementById('totalReservasAvulsos').textContent = reservas.length;
+        document.getElementById('totalHistoricoAvulsos').textContent = historico.length;
+        document.getElementById('totalAvulsosGeral').textContent = totalGeral;
         
         // Renderizar confirmados
         const ulConfirmados = document.getElementById('listaAvulsos');
@@ -1169,6 +1191,69 @@ function compartilharWhatsApp() {
         } else {
           console.error('❌ Elemento #listaReservasAvulsos não encontrado no DOM!');
         }
+
+        // Renderizar histórico
+        const ulHistorico = document.getElementById('listaHistoricoAvulsos');
+        console.log('Elemento ulHistorico encontrado?', !!ulHistorico);
+        
+        if (ulHistorico) {
+          ulHistorico.innerHTML = '';
+          console.log(`🔄 Renderizando ${historico.length} avulsos histórico...`);
+          
+          historico.forEach((a, i) => {
+            console.log(`  └─ Renderizando histórico ${i + 1}:`, a.nome);
+            const li = document.createElement('li');
+            li.className = 'lista-item';
+            
+            const info = document.createElement('div');
+            info.className = 'info';
+            
+            const nome = document.createElement('span');
+            nome.className = 'nome';
+            nome.textContent = `${i + 1}. ${a.nome}`;
+            nome.style.color = '#94a3b8';
+            
+            const data = document.createElement('span');
+            data.className = 'badge badge-avulso';
+            data.style.marginLeft = '8px';
+            const dataFormatada = new Date(a.data_confirmacao).toLocaleDateString('pt-BR');
+            data.textContent = dataFormatada;
+            
+            const statusPago = a.pago ? '✅ PAGO' : '❌ NÃO PAGO';
+            const statusBadge = document.createElement('span');
+            statusBadge.className = `badge`;
+            statusBadge.style.marginLeft = '8px';
+            statusBadge.style.backgroundColor = a.pago ? 'rgba(52,211,153,0.2)' : 'rgba(239,68,68,0.2)';
+            statusBadge.style.color = a.pago ? '#34d399' : '#ef4444';
+            statusBadge.textContent = statusPago;
+            
+            info.appendChild(nome);
+            info.appendChild(data);
+            info.appendChild(statusBadge);
+            li.appendChild(info);
+            
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-secondary';
+            btn.style.padding = '6px 10px';
+            btn.textContent = a.pago ? 'Marcar Não Pago' : 'Marcar Pago';
+            btn.addEventListener('click', () => marcarHistoricoComoPago(a.id, !a.pago));
+            
+            li.appendChild(btn);
+            ulHistorico.appendChild(li);
+          });
+          
+          console.log(`✅ Renderização histórico completa! ${historico.length} itens adicionados.`);
+          
+          if (historico.length === 0) {
+            const li = document.createElement('li');
+            li.style.textAlign = 'center';
+            li.style.color = 'var(--text-muted)';
+            li.textContent = 'Nenhum avulso no histórico';
+            ulHistorico.appendChild(li);
+          }
+        } else {
+          console.error('❌ Elemento #listaHistoricoAvulsos não encontrado no DOM!');
+        }
         
       } catch (err) {
         console.error('Erro ao carregar avulsos:', err);
@@ -1199,6 +1284,64 @@ function compartilharWhatsApp() {
         }
       } catch (err) {
         mostrarMensagem('Erro ao atualizar status', 'erro');
+      }
+    }
+
+    // MARCAR HISTÓRICO DE AVULSO COMO PAGO/NÃO PAGO
+    async function marcarHistoricoComoPago(id, marcarPago) {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        alert('Você precisa estar logado como admin');
+        return;
+      }
+      
+      try {
+        const endpoint = marcarPago ? `/historico-avulsos/${id}/pago` : `/historico-avulsos/${id}/nao-pago`;
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          mostrarMensagem(marcarPago ? 'Marcado como PAGO ✅' : 'Marcado como NÃO PAGO ❌', 'sucesso');
+          atualizarListaAvulsos();
+        } else {
+          mostrarMensagem(data.erro || 'Erro ao atualizar', 'erro');
+        }
+      } catch (err) {
+        mostrarMensagem('Erro ao atualizar status', 'erro');
+      }
+    }
+
+    // FINALIZAR DIA (salvar avulsos para histórico e limpar confirmados)
+    async function finalizarDia() {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        alert('Você precisa estar logado como admin');
+        return;
+      }
+      
+      const confirmacao = confirm('⚠️ Tem certeza que deseja finalizar o dia?\n\nIsso vai:\n1. Mover todos os avulsos para o histórico\n2. Limpar a lista de confirmados');
+      
+      if (!confirmacao) return;
+      
+      try {
+        const res = await fetch('/finalizar-dia', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          mostrarMensagem(`✅ ${data.mensagem}`, 'sucesso');
+          setTimeout(() => atualizarListaAvulsos(), 500);
+        } else {
+          mostrarMensagem(data.erro || 'Erro ao finalizar', 'erro');
+        }
+      } catch (err) {
+        console.error('Erro:', err);
+        mostrarMensagem('Erro ao finalizar dia', 'erro');
       }
     }
 

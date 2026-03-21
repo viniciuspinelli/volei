@@ -99,6 +99,17 @@ async function initDB() {
         data_reserva TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Criar tabela de histórico de avulsos (para controle de pagamento)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS historico_avulsos (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(255) NOT NULL,
+        genero VARCHAR(50),
+        pago BOOLEAN DEFAULT false,
+        data_jogo TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
     
     await client.query('COMMIT');
     console.log('✅ Tabelas criadas/verificadas com sucesso!');
@@ -434,13 +445,19 @@ app.get('/avulsos-confirmados', async (req, res) => {
       'SELECT id, nome, tipo, genero, data_reserva as data_confirmacao FROM reservas WHERE tipo = $1 ORDER BY data_reserva DESC',
       ['avulso']
     );
+
+    // Busca histórico de avulsos (já finalizados)
+    const historico = await pool.query(
+      'SELECT id, nome, genero, pago, data_jogo as data_confirmacao FROM historico_avulsos ORDER BY data_jogo DESC'
+    );
     
-    console.log(`📋 GET /avulsos-confirmados - Confirmados: ${confirmed.rows.length}, Reservas: ${waitlist.rows.length}`);
+    console.log(`📋 GET /avulsos-confirmados - Confirmados: ${confirmed.rows.length}, Reservas: ${waitlist.rows.length}, Histórico: ${historico.rows.length}`);
     
     res.json({
       confirmados: confirmed.rows,
       reservas: waitlist.rows,
-      total: confirmed.rows.length + waitlist.rows.length
+      historico: historico.rows,
+      total: confirmed.rows.length + waitlist.rows.length + historico.rows.length
     });
   } catch (err) {
     console.error('Erro ao listar avulsos:', err);
@@ -730,6 +747,86 @@ app.post('/admin/trocar-senha', verificarAdmin, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ erro: 'Erro ao trocar senha' });
+  }
+});
+
+// FINALIZAR DIA (move avulsos para histórico e limpa confirmados_atual)
+app.post('/finalizar-dia', verificarAdmin, async (req, res) => {
+  try {
+    console.log('🔄 Iniciando finalizador de dia...');
+    
+    // 1. Buscar todos os avulsos confirmados atuais
+    const avulsosConfirmados = await pool.query(
+      'SELECT nome, genero, pago FROM confirmados_atual WHERE tipo = $1',
+      ['avulso']
+    );
+    
+    // 2. Inserir avulsos no histórico
+    for (const avulso of avulsosConfirmados.rows) {
+      await pool.query(
+        'INSERT INTO historico_avulsos (nome, genero, pago) VALUES ($1, $2, $3)',
+        [avulso.nome, avulso.genero, avulso.pago || false]
+      );
+    }
+    console.log(`✅ ${avulsosConfirmados.rows.length} avulsos movidos para histórico`);
+    
+    // 3. Limpar toda a tabela confirmados_atual
+    await pool.query('DELETE FROM confirmados_atual');
+    console.log('✅ confirmados_atual limpo');
+    
+    // 4. Limpar reservas também (ou deixar? você decide)
+    // await pool.query('DELETE FROM reservas');
+    
+    res.json({ 
+      sucesso: true, 
+      mensagem: `Dia finalizado! ${avulsosConfirmados.rows.length} avulsos foram salvos no histórico.`,
+      avulsosSalvos: avulsosConfirmados.rows.length
+    });
+  } catch (err) {
+    console.error('❌ Erro ao finalizar dia:', err);
+    res.status(500).json({ erro: 'Erro ao finalizar dia' });
+  }
+});
+
+// MARCAR HISTÓRICO DE AVULSO COMO PAGO
+app.post('/historico-avulsos/:id/pago', verificarAdmin, async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const result = await pool.query(
+      'UPDATE historico_avulsos SET pago = TRUE WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ erro: 'Avulso não encontrado' });
+    }
+    
+    res.json({ sucesso: true, avulso: result.rows[0] });
+  } catch (err) {
+    console.error('Erro ao marcar pago:', err);
+    res.status(500).json({ erro: 'Erro ao atualizar status' });
+  }
+});
+
+// DESMARCAR HISTÓRICO DE AVULSO COMO PAGO
+app.post('/historico-avulsos/:id/nao-pago', verificarAdmin, async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const result = await pool.query(
+      'UPDATE historico_avulsos SET pago = FALSE WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ erro: 'Avulso não encontrado' });
+    }
+    
+    res.json({ sucesso: true, avulso: result.rows[0] });
+  } catch (err) {
+    console.error('Erro ao desmarcar pago:', err);
+    res.status(500).json({ erro: 'Erro ao atualizar status' });
   }
 });
 
