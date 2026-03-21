@@ -1032,11 +1032,16 @@ function compartilharWhatsApp() {
     // CARREGAR LISTA DE AVULSOS
     async function atualizarListaAvulsos() {
       try {
+        console.log('📞 Chamando /avulsos-confirmados...');
         const res = await fetch('/avulsos-confirmados');
         const data = await res.json();
         
+        console.log('📥 Resposta recebida:', data);
+        
         const confirmados = data.confirmados || [];
         const reservas = data.reservas || [];
+        
+        console.log(`✅ Avulsos confirmados: ${confirmados.length}, Reservas: ${reservas.length}`);
         
         // Atualizar contador
         document.getElementById('totalAvulsos').textContent = confirmados.length;
@@ -1206,9 +1211,14 @@ btn.addEventListener('click', () => marcarAvulsoComoPago(a.id, !a.pago));
           // Limpar formulário
           document.getElementById('formConfirmaAdmin').reset();
           
-          // Recarregar lista
+          // Recarregar listas
           atualizarLista();
-          atualizarListaAvulsos();
+          
+          // Se foi avulso, atualizar lista de avulsos também
+          if (tipo === 'avulso') {
+            console.log('Avulso confirmado, atualizando lista de avulsos...');
+            atualizarListaAvulsos();
+          }
         } else {
           mostrarMensagem(data.erro || 'Erro ao confirmar', 'erro');
         }
