@@ -379,25 +379,94 @@
   </div>
 
   <script>
-    // NAVEGAÇÃO
-    const navItems = document.querySelectorAll('[data-page]');
-    const pages = document.querySelectorAll('.page');
-    function navigateTo(pageId) {
-      pages.forEach(p => p.classList.remove('active'));
-      document.getElementById(`page-${pageId}`).classList.add('active');
-      navItems.forEach(item => item.classList.toggle('active', item.dataset.page === pageId));
-      if (pageId === 'estatisticas') carregarEstatisticas();
-    }
-    navItems.forEach(item => item.addEventListener('click', () => navigateTo(item.dataset.page)));
-    
-    // MENSAGEM
+    // VARIÁVEIS GLOBAIS
+    let adminToken = localStorage.getItem('adminToken') || null;
+    let isAdmin = !!adminToken;
+
+    // FUNÇÕES CRÍTICAS - DEVEM SER DEFINIDAS PRIMEIRO
     function mostrarMensagem(texto, tipo = '') {
       const el = document.getElementById('mensagem');
       el.textContent = texto;
       el.className = `mensagem ${tipo}`;
       setTimeout(() => { el.textContent = ''; el.className = 'mensagem'; }, 3000);
     }
+
+    function abrirLogin() {
+      document.getElementById('loginModal').classList.add('ativo');
+      document.getElementById('loginUsuario').focus();
+    }
     
+    function fecharLogin() {
+      document.getElementById('loginModal').classList.remove('ativo');
+      document.getElementById('loginUsuario').value = '';
+      document.getElementById('loginSenha').value = '';
+      document.getElementById('loginErro').style.display = 'none';
+    }
+    
+    async function fazerLogin() {
+      const usuario = document.getElementById('loginUsuario').value;
+      const senha = document.getElementById('loginSenha').value;
+      try {
+        const res = await fetch('/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usuario, senha })
+        });
+        const data = await res.json();
+        if (data.sucesso) {
+          adminToken = data.token;
+          localStorage.setItem('adminToken', adminToken);
+          isAdmin = true;
+          fecharLogin();
+          atualizarUIAdmin();
+          carregarEstatisticas();
+          mostrarMensagem('Login realizado com sucesso!', 'sucesso');
+        } else {
+          document.getElementById('loginErro').textContent = data.erro || 'Credenciais inválidas';
+          document.getElementById('loginErro').style.display = 'block';
+        }
+      } catch (err) {
+        document.getElementById('loginErro').textContent = 'Erro de conexão';
+        document.getElementById('loginErro').style.display = 'block';
+      }
+    }
+    
+    async function fazerLogout() {
+      if (adminToken) {
+        try {
+          await fetch('/logout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: adminToken })
+          });
+        } catch (e) {}
+      }
+      adminToken = null;
+      isAdmin = false;
+      localStorage.removeItem('adminToken');
+      atualizarUIAdmin();
+      carregarEstatisticas();
+      mostrarMensagem('Logout realizado', 'sucesso');
+    }
+    
+    function atualizarUIAdmin() {
+      document.getElementById('btnAdminSidebar').style.display = isAdmin ? 'none' : 'flex';
+      document.getElementById('btnLogoutSidebar').style.display = isAdmin ? 'flex' : 'none';
+      document.getElementById('btnAdminMobile').style.display = isAdmin ? 'none' : 'flex';
+      document.getElementById('btnLogoutMobile').style.display = isAdmin ? 'flex' : 'none';
+      if (window.ultimoSorteio) renderizarTimes();
+    }
+
+    // NAVEGAÇÃO
+    const navItems = document.querySelectorAll('[data-page]');
+    const pages = document.querySelectorAll('.page');
+    function navigateTo(pageId) {
+      pages.forEach(p => p.classList.remove('active'));
+      document.getElementById(`page-${pageId}`).classList.add('active');        
+      navItems.forEach(item => item.classList.toggle('active', item.dataset.page === pageId));
+      if (pageId === 'estatisticas') carregarEstatisticas();
+    }
+    navItems.forEach(item => item.addEventListener('click', () => navigateTo(item.dataset.page)));
     // ATUALIZAR LISTA (CAP 24)
     async function atualizarLista() {
       try {
@@ -808,77 +877,7 @@ function compartilharWhatsApp() {
         }
       }
     });
-    
-    // SISTEMA ADMIN
-    let adminToken = null;
-    let isAdmin = false;
-    
-    function abrirLogin() {
-      document.getElementById('loginModal').classList.add('ativo');
-      document.getElementById('loginUsuario').focus();
-    }
-    
-    function fecharLogin() {
-      document.getElementById('loginModal').classList.remove('ativo');
-      document.getElementById('loginUsuario').value = '';
-      document.getElementById('loginSenha').value = '';
-      document.getElementById('loginErro').style.display = 'none';
-    }
-    
-    async function fazerLogin() {
-      const usuario = document.getElementById('loginUsuario').value;
-      const senha = document.getElementById('loginSenha').value;
-      try {
-        const res = await fetch('/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ usuario, senha })
-        });
-        const data = await res.json();
-        if (data.sucesso) {
-          adminToken = data.token;
-          isAdmin = true;
-          fecharLogin();
-          atualizarUIAdmin();
-          carregarEstatisticas();
-          mostrarMensagem('Login realizado com sucesso!', 'sucesso');
-        } else {
-          document.getElementById('loginErro').textContent = data.erro || 'Credenciais inválidas';
-          document.getElementById('loginErro').style.display = 'block';
-        }
-      } catch (err) {
-        document.getElementById('loginErro').textContent = 'Erro de conexão';
-        document.getElementById('loginErro').style.display = 'block';
-      }
-    }
-    
-    async function fazerLogout() {
-      if (adminToken) {
-        try {
-          await fetch('/logout', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: adminToken })
-          });
-        } catch (e) {}
-      }
-      adminToken = null;
-      isAdmin = false;
-      atualizarUIAdmin();
-      carregarEstatisticas();
-      mostrarMensagem('Logout realizado', 'sucesso');
-    }
-    
-    function atualizarUIAdmin() {
-      // Sidebar desktop
-      document.getElementById('btnAdminSidebar').style.display = isAdmin ? 'none' : 'flex';
-      document.getElementById('btnLogoutSidebar').style.display = isAdmin ? 'flex' : 'none';
-      // Bottom nav mobile
-      document.getElementById('btnAdminMobile').style.display = isAdmin ? 'none' : 'flex';
-      document.getElementById('btnLogoutMobile').style.display = isAdmin ? 'flex' : 'none';
-      // Re-renderiza times se existir sorteio ativo para ativar/desativar drag
-      if (window.ultimoSorteio) renderizarTimes();
-    }
+
     
     // REMOVER PESSOA DAS ESTATÍSTICAS (ADMIN)
     async function removerDasEstatisticas(nome) {
