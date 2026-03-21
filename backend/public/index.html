@@ -396,7 +396,7 @@
       <form onsubmit="event.preventDefault(); fazerLogin();">
         <div class="login-erro" id="loginErro"></div>
         <input type="text" id="loginUsuario" placeholder="Usuário" required>
-        <input type="password" id="loginSenha" placeholder="Senha" required>
+        <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password" required>
         <button type="submit" class="btn btn-primary btn-block">Entrar</button>
         <button type="button" class="btn btn-secondary btn-block" onclick="fecharLogin()" style="margin-top:8px;">Cancelar</button>
       </form>
@@ -1049,9 +1049,18 @@ function compartilharWhatsApp() {
         
         // Renderizar confirmados
         const ulConfirmados = document.getElementById('listaAvulsos');
+        console.log('Elemento ulConfirmados encontrado?', !!ulConfirmados);
+        
+        if (!ulConfirmados) {
+          console.error('❌ Elemento #listaAvulsos não encontrado no DOM!');
+          return;
+        }
+        
         ulConfirmados.innerHTML = '';
+        console.log(`🔄 Renderizando ${confirmados.length} avulsos confirmados...`);
         
         confirmados.forEach((a, i) => {
+          console.log(`  └─ Renderizando avulso ${i + 1}:`, a.nome);
           const li = document.createElement('li');
           li.className = 'lista-item';
           
@@ -1086,11 +1095,13 @@ function compartilharWhatsApp() {
           btn.className = 'btn btn-secondary';
           btn.style.padding = '6px 10px';
           btn.textContent = a.pago ? 'Marcar Não Pago' : 'Marcar Pago';
-btn.addEventListener('click', () => marcarAvulsoComoPago(a.id, !a.pago));
+          btn.addEventListener('click', () => marcarAvulsoComoPago(a.id, !a.pago));
           
           li.appendChild(btn);
           ulConfirmados.appendChild(li);
         });
+        
+        console.log(`✅ Renderização completa! ${confirmados.length} itens adicionados.`);
         
         if (confirmados.length === 0) {
           const li = document.createElement('li');
@@ -1102,38 +1113,48 @@ btn.addEventListener('click', () => marcarAvulsoComoPago(a.id, !a.pago));
         
         // Renderizar reservas
         const ulReservas = document.getElementById('listaReservasAvulsos');
-        ulReservas.innerHTML = '';
+        console.log('Elemento ulReservas encontrado?', !!ulReservas);
         
-        reservas.forEach((a, i) => {
-          const li = document.createElement('li');
-          li.className = 'lista-item';
+        if (ulReservas) {
+          ulReservas.innerHTML = '';
+          console.log(`🔄 Renderizando ${reservas.length} reservas de avulsos...`);
           
-          const info = document.createElement('div');
-          info.className = 'info';
+          reservas.forEach((a, i) => {
+            console.log(`  └─ Renderizando reserva ${i + 1}:`, a.nome);
+            const li = document.createElement('li');
+            li.className = 'lista-item';
+            
+            const info = document.createElement('div');
+            info.className = 'info';
+            
+            const nome = document.createElement('span');
+            nome.className = 'nome';
+            nome.textContent = `${i + 1}. ${a.nome} (RESERVA)`;
+            nome.style.color = '#94a3b8';
+            
+            const data = document.createElement('span');
+            data.className = 'badge badge-avulso';
+            data.style.marginLeft = '8px';
+            const dataFormatada = new Date(a.data_confirmacao).toLocaleDateString('pt-BR');
+            data.textContent = dataFormatada;
+            
+            info.appendChild(nome);
+            info.appendChild(data);
+            li.appendChild(info);
+            ulReservas.appendChild(li);
+          });
           
-          const nome = document.createElement('span');
-          nome.className = 'nome';
-          nome.textContent = `${i + 1}. ${a.nome} (RESERVA)`;
-          nome.style.color = '#94a3b8';
+          console.log(`✅ Renderização de reservas completa! ${reservas.length} itens adicionados.`);
           
-          const data = document.createElement('span');
-          data.className = 'badge badge-avulso';
-          data.style.marginLeft = '8px';
-          const dataFormatada = new Date(a.data_confirmacao).toLocaleDateString('pt-BR');
-          data.textContent = dataFormatada;
-          
-          info.appendChild(nome);
-          info.appendChild(data);
-          li.appendChild(info);
-          ulReservas.appendChild(li);
-        });
-        
-        if (reservas.length === 0) {
-          const li = document.createElement('li');
-          li.style.textAlign = 'center';
-          li.style.color = 'var(--text-muted)';
-          li.textContent = 'Nenhuma reserva de avulso';
-          ulReservas.appendChild(li);
+          if (reservas.length === 0) {
+            const li = document.createElement('li');
+            li.style.textAlign = 'center';
+            li.style.color = 'var(--text-muted)';
+            li.textContent = 'Nenhuma reserva de avulso';
+            ulReservas.appendChild(li);
+          }
+        } else {
+          console.error('❌ Elemento #listaReservasAvulsos não encontrado no DOM!');
         }
         
       } catch (err) {
