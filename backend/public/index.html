@@ -1053,7 +1053,7 @@ function compartilharWhatsApp() {
           btn.className = 'btn btn-secondary';
           btn.style.padding = '6px 10px';
           btn.textContent = a.pago ? 'Marcar Não Pago' : 'Marcar Pago';
-          btn.addEventListener('click', () => marcarAvulsoComoP ago(a.id, !a.pago));
+btn.addEventListener('click', () => marcarAvulsoComoPago(a.id, !a.pago));
           
           li.appendChild(btn);
           ulConfirmados.appendChild(li);
@@ -1134,23 +1134,7 @@ function compartilharWhatsApp() {
         mostrarMensagem('Erro ao atualizar status', 'erro');
       }
     }
-    
-    // ATUALIZAR UI DO ADMIN (mostrar/esconder menu de avulsos)
-    const originalAtualizarUIAdmin = atualizarUIAdmin;
-    async function atualizarUIAdmin() {
-      const token = localStorage.getItem('adminToken');
-      const navAdmin = document.getElementById('navMeuPerfilAdmin');
-      
-      if (token) {
-        // Admin logado - mostrar menu de avulsos
-        if (navAdmin) navAdmin.classList.add('visible');
-      } else {
-        // Admin não logado - esconder menu
-        if (navAdmin) navAdmin.classList.remove('visible');
-      }
-    }
-    
-    
+
     // CARREGAR LISTA DE AVULSOS
     async function atualizarListaAvulsos() {
       try {
@@ -1264,51 +1248,7 @@ function compartilharWhatsApp() {
         console.error('Erro ao carregar avulsos:', err);
       }
     }
-    
-    // MARCAR AVULSO COMO PAGO/NÃO PAGO
-    async function marcarAvulsoComoPago(id, marcarPago) {
-      const token = localStorage.getItem('adminToken');
-      if (!token) {
-        alert('Você precisa estar logado como admin');
-        return;
-      }
-      
-      try {
-        const endpoint = marcarPago ? `/avulsos/${id}/pago` : `/avulsos/${id}/nao-pago`;
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await res.json();
-        
-        if (res.ok) {
-          mostrarMensagem(marcarPago ? 'Marcado como PAGO ✅' : 'Marcado como NÃO PAGO ❌', 'sucesso');
-          atualizarListaAvulsos();
-        } else {
-          mostrarMensagem(data.erro || 'Erro ao atualizar', 'erro');
-        }
-      } catch (err) {
-        mostrarMensagem('Erro ao atualizar status', 'erro');
-      }
-    }
-    
-    // FUNÇÃO PARA IR PARA UMA PÁGINA
-    function irPara(pagina) {
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      const pageEl = document.getElementById('page-' + pagina);
-      if (pageEl) {
-        pageEl.classList.add('active');
-        
-        // Atualizar navegação ativa
-        document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-        event?.target?.classList.add('active');
-        
-        if (pagina === 'avulsos') {
-          atualizarListaAvulsos();
-        }
-      }
-    }
-    
+
     // INICIALIZA
     carregarRegrasConfirmacao();
     // Recarregar regras a cada minuto (para atualizar se mudar de dia)
