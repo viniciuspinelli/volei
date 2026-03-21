@@ -370,11 +370,13 @@
   <div class="login-modal" id="loginModal">
     <div class="login-box">
       <h3>Login Admin</h3>
-      <div class="login-erro" id="loginErro"></div>
-      <input type="text" id="loginUsuario" placeholder="Usuário">
-      <input type="password" id="loginSenha" placeholder="Senha">
-      <button class="btn btn-primary btn-block" onclick="fazerLogin()">Entrar</button>
-      <button class="btn btn-secondary btn-block" onclick="fecharLogin()" style="margin-top:8px;">Cancelar</button>
+      <form onsubmit="event.preventDefault(); fazerLogin();">
+        <div class="login-erro" id="loginErro"></div>
+        <input type="text" id="loginUsuario" placeholder="Usuário" required>
+        <input type="password" id="loginSenha" placeholder="Senha" required>
+        <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+        <button type="button" class="btn btn-secondary btn-block" onclick="fecharLogin()" style="margin-top:8px;">Cancelar</button>
+      </form>
     </div>
   </div>
 
