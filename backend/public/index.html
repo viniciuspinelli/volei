@@ -206,7 +206,7 @@
     <!-- Main Content -->
     <main class="main-content">
       <!-- Página Avulsos (Admin Only) -->
-      <section id="page-avulsos" class="page" style="display: none;">
+      <section id="page-avulsos" class="page">
         <div class="page-header">
           <h1 class="page-title">💰 Controle de Avulsos</h1>
           <p class="page-subtitle">Avulsos que confirmaram - para controle de cobrança</p>
@@ -489,11 +489,24 @@
     const navItems = document.querySelectorAll('[data-page]');
     const pages = document.querySelectorAll('.page');
     function navigateTo(pageId) {
+      console.log(`📄 Navegando para página: ${pageId}`);
       pages.forEach(p => p.classList.remove('active'));
-      document.getElementById(`page-${pageId}`).classList.add('active');        
+      
+      const pageElement = document.getElementById(`page-${pageId}`);
+      console.log(`  └─ Elemento page-${pageId} encontrado?`, !!pageElement);
+      
+      if (pageElement) {
+        pageElement.classList.add('active');
+        console.log(`  └─ Página ativada. Display:`, window.getComputedStyle(pageElement).display);
+      }
+      
       navItems.forEach(item => item.classList.toggle('active', item.dataset.page === pageId));
+      
       if (pageId === 'estatisticas') carregarEstatisticas();
-      if (pageId === 'avulsos') atualizarListaAvulsos();
+      if (pageId === 'avulsos') {
+        console.log('  └─ Chamando atualizarListaAvulsos...');
+        atualizarListaAvulsos();
+      }
     }
     navItems.forEach(item => item.addEventListener('click', () => navigateTo(item.dataset.page)));
     // ATUALIZAR LISTA (CAP 24)
