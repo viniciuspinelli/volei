@@ -1,5 +1,31 @@
 const API_URL = '';
 
+// Armazena as regras de confirmação
+let regraConfirmacao = {};
+
+// Carregar regras de confirmação
+async function carregarRegrasConfirmacao() {
+  try {
+    const res = await fetch('/regras-confirmacao');
+    const data = await res.json();
+    regraConfirmacao = data;
+    
+    // Atualizar a mensagem de regras na página
+    const msgRegras = document.getElementById('msgRegrasConfirmacao');
+    if (msgRegras) {
+      if (data.bloqueado) {
+        msgRegras.innerHTML = `<strong style="color: #c0392b;">⛔ Sistema bloqueado para manutenção no domingo!</strong>`;
+        msgRegras.style.display = 'block';
+      } else if (data.tipoAtivo) {
+        msgRegras.innerHTML = `<strong style="color: #ffd54f;">📅 ${data.diaAtual}: Dia de confirmação para <span style="color: #27ae60;">${data.tipoAtivo.toUpperCase()}S</span></strong>`;
+        msgRegras.style.display = 'block';
+      }
+    }
+  } catch (err) {
+    console.error('Erro ao carregar regras:', err);
+  }
+}
+
 function atualizarLista() {
   fetch(`/confirmados`)
     .then(res => res.json())
@@ -97,7 +123,22 @@ document.getElementById('formConfirma').addEventListener('submit', function(e) {
   const mensagem = document.getElementById('mensagem');
   mensagem.textContent = '';
   mensagem.style.color = '#27ae60';
+  
   if (!nome || !tipo || !genero) return;
+  
+  // Verificar se este tipo pode confirmar hoje
+  if (regraConfirmacao.bloqueado) {
+    mensagem.textContent = '❌ Sistema bloqueado no domingo. Tente amanhã!';
+    mensagem.style.color = '#c0392b';
+    return;
+  }
+  
+  if (regraConfirmacao.tipoAtivo && tipo !== regraConfirmacao.tipoAtivo) {
+    mensagem.textContent = `❌ Hoje ${regraConfirmacao.diaAtual} é dia de confirmação apenas para ${regraConfirmacao.tipoAtivo === 'mensalista' ? 'MENSALISTAS' : 'AVULSOS'}!`;
+    mensagem.style.color = '#c0392b';
+    return;
+  }
+  
   fetch(`/confirmar`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -333,6 +374,12 @@ document.getElementById('limparConfirmados').addEventListener('click', function(
 
 // Botão para limpar apenas o sorteio
 document.addEventListener('DOMContentLoaded', function() {
+  // Carregar regras de confirmação
+  carregarRegrasConfirmacao();
+  
+  // Recarregar regras a cada minuto (para atualizar se mudar de dia)
+  setInterval(carregarRegrasConfirmacao, 60000);
+  
   let limparSorteioBtn = document.createElement('button');
   limparSorteioBtn.id = 'limparSorteio';
   limparSorteioBtn.className = 'ghost';

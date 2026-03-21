@@ -1,0 +1,23 @@
+🏐 SITE DE CONFIRMAÇÃO - ATUALIZADO! 
+
+Oi pessoal! O site foi melhorado com algumas novidades:
+
+📋 LISTA DE RESERVAS
+✅ Limite: 24 confirmados por vôlei
+✅ Se encher, você vai para RESERVAS (não fica fora!)
+✅ Quando alguém sair, você sobe automaticamente
+
+⏳ CONFIRMAÇÃO
+✅ Confirma normalmente até 24 pessoas
+✅ A 25ª pessoa recebe um popup: "Você está em RESERVAS"
+✅ Quando alguém cancela, o primeiro da reserva entra
+
+🗑️ REMOVER
+✅ Arrependeu? Clica no X e remove seu nome!
+✅ Vale tanto para confirmados quanto para reservas
+
+TL;DR: Agora é justo! Se encher, você entra em reserva e será chamado quando tiver vaga.
+
+Acessem: [SEU LINK AQUI]
+
+Dúvidas? 😊🏐

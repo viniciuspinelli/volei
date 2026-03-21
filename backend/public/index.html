@@ -230,6 +230,7 @@
           </form>
         </div>
         <div id="mensagem" class="mensagem"></div>
+        <div id="msgRegrasConfirmacao" class="mensagem aviso" style="display: none;"></div>
         <div class="card">
           <h3 class="card-title">Confirmados <span class="contador-badge" id="contadorConfirmados">0</span></h3>
           <button class="btn btn-danger" id="limparConfirmados" style="margin-bottom: 16px;">Limpar Lista</button>
@@ -461,6 +462,30 @@
       }
     }
     
+    // CARREGAR REGRAS DE CONFIRMAÇÃO
+    let regraConfirmacao = {};
+    async function carregarRegrasConfirmacao() {
+      try {
+        const res = await fetch('/regras-confirmacao');
+        const data = await res.json();
+        regraConfirmacao = data;
+        
+        // Atualizar a mensagem de regras na página
+        const msgRegras = document.getElementById('msgRegrasConfirmacao');
+        if (msgRegras) {
+          if (data.bloqueado) {
+            msgRegras.innerHTML = `<strong>⛔ Sistema bloqueado para manutenção no domingo!</strong>`;
+            msgRegras.style.display = 'block';
+          } else if (data.tipoAtivo) {
+            msgRegras.innerHTML = `<strong>📅 ${data.diaAtual}: Dia de confirmação para <span style="color: #34d399;">${data.tipoAtivo.toUpperCase()}S</span></strong>`;
+            msgRegras.style.display = 'block';
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao carregar regras:', err);
+      }
+    }
+    
     // FORM CONFIRMAÇÃO
     document.getElementById('formConfirma').addEventListener('submit', async function(e) {
       e.preventDefault();
@@ -468,6 +493,17 @@
       const tipo = document.getElementById('tipo').value;
       const genero = document.getElementById('genero').value;
       if (!nome || !tipo || !genero) return;
+      
+      // Verificar se este tipo pode confirmar hoje
+      if (regraConfirmacao.bloqueado) {
+        mostrarMensagem('❌ Sistema bloqueado no domingo. Tente amanhã!', 'erro');
+        return;
+      }
+      
+      if (regraConfirmacao.tipoAtivo && tipo !== regraConfirmacao.tipoAtivo) {
+        mostrarMensagem(`❌ Hoje ${regraConfirmacao.diaAtual} é dia de confirmação apenas para ${regraConfirmacao.tipoAtivo === 'mensalista' ? 'MENSALISTAS' : 'AVULSOS'}!`, 'erro');
+        return;
+      }
       
       try {
         const res = await fetch('/confirmar', {
@@ -909,6 +945,9 @@ function compartilharWhatsApp() {
     }
     
     // INICIALIZA
+    carregarRegrasConfirmacao();
+    // Recarregar regras a cada minuto (para atualizar se mudar de dia)
+    setInterval(carregarRegrasConfirmacao, 60000);
     atualizarLista();
     atualizarUIAdmin();
   </script>

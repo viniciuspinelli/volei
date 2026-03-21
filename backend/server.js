@@ -206,6 +206,63 @@ app.get('/verificar-token', async (req, res) => {
   }
 });
 
+// FUNÇÃO AUXILIAR: Verificar se é permitido confirmar (baseado no dia da semana)
+function verificarDisponibilidadeConfirmacao(tipo) {
+  const agora = new Date();
+  const diaSemana = agora.getDay(); // 0=domingo, 1=seg, 2=ter, 3=qua, 4=qui, 5=sexta, 6=sabado
+  
+  // Sábado (6) a Quinta (4): apenas mensalistas
+  // Sexta (5): apenas avulsos
+  
+  if (diaSemana === 5) {
+    // SEXTA-FEIRA: apenas avulsos
+    if (tipo !== 'avulso') {
+      return {
+        permitido: false,
+        mensagem: '❌ Mentores podem confirmar apenas de segundas a quintas. Hoje (sexta) é dia de avulsos confirmarem!'
+      };
+    }
+  } else {
+    // SÁBADO A QUINTA: apenas mensalistas
+    if (tipo !== 'mensalista') {
+      return {
+        permitido: false,
+        mensagem: '❌ Avulsos podem confirmar apenas às sextas. Hoje é dia de mensalistas confirmarem!'
+      };
+    }
+  }
+  
+  return { permitido: true, mensagem: '' };
+}
+
+// ENDPOINT: Obter regras de confirmação (para o frontend)
+app.get('/regras-confirmacao', async (req, res) => {
+  const agora = new Date();
+  const diaSemana = agora.getDay();
+  const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+  const diaAtual = diasSemana[diaSemana];
+  
+  let tipoAtivo, tipoDesativo;
+  if (diaSemana === 5) {
+    tipoAtivo = 'avulso';
+    tipoDesativo = 'mensalista';
+  } else if (diaSemana === 0) {
+    tipoAtivo = null; // Domingo não é permitido
+    tipoDesativo = null;
+  } else {
+    tipoAtivo = 'mensalista';
+    tipoDesativo = 'avulso';
+  }
+  
+  res.json({
+    diaAtual,
+    diaSemana,
+    tipoAtivo,
+    tipoDesativo,
+    bloqueado: diaSemana === 0 // Domingo é completamente bloqueado
+  });
+});
+
 // CONFIRMAR PRESENÇA (salva em AMBAS as tabelas ou em reservas)
 app.post('/confirmar', async (req, res) => {
   const { nome, tipo, genero } = req.body;
@@ -215,6 +272,16 @@ app.post('/confirmar', async (req, res) => {
   }
   
   try {
+    // VERIFICAR SE PODE CONFIRMAR
+    const verificacao = verificarDisponibilidadeConfirmacao(tipo);
+    if (!verificacao.permitido) {
+      return res.status(403).json({ 
+        sucesso: false, 
+        erro: verificacao.mensagem,
+        bloqueado: true 
+      });
+    }
+    
     // Verifica se já tem 24 confirmados
     const countResult = await pool.query('SELECT COUNT(*) as total FROM confirmados_atual');
     const total = parseInt(countResult.rows[0].total);
