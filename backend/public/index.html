@@ -1169,6 +1169,8 @@ btn.addEventListener('click', () => marcarAvulsoComoPago(a.id, !a.pago));
       const genero = document.getElementById('generoAdmin').value;
       const token = localStorage.getItem('adminToken');
       
+      console.log('Confirmação Admin:', { nome, tipo, genero, token: token ? token.substring(0, 10) + '...' : 'sem token' });
+      
       if (!nome || !tipo || !genero) {
         mostrarMensagem('Preencha todos os campos', 'erro');
         return;
@@ -1190,6 +1192,7 @@ btn.addEventListener('click', () => marcarAvulsoComoPago(a.id, !a.pago));
         });
         
         const data = await res.json();
+        console.log('Resposta do servidor:', data);
         
         if (data.sucesso) {
           const msg = data.reserva 

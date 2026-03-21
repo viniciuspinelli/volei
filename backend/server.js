@@ -52,6 +52,12 @@ async function initDB() {
       )
     `);
     
+    // Adicionar coluna pago se não existir
+    await client.query(`
+      ALTER TABLE confirmados_atual
+      ADD COLUMN IF NOT EXISTS pago BOOLEAN DEFAULT false
+    `);
+    
     // Criar tabela de histórico
     await client.query(`
       CREATE TABLE IF NOT EXISTS historico_confirmacoes (
@@ -115,20 +121,6 @@ async function initDB() {
 }
 
 initDB();
-
-// FUNÇÃO: Verificar se token é válido (retorna bool)
-async function isAdminToken(token) {
-  if (!token) return false;
-  try {
-    const result = await pool.query(
-      'SELECT * FROM admin_tokens WHERE token = $1 AND expira_em > NOW()',
-      [token]
-    );
-    return result.rows.length > 0;
-  } catch (err) {
-    return false;
-  }
-}
 
 // MIDDLEWARE: Verificar token admin
 async function verificarAdmin(req, res, next) {
@@ -280,24 +272,40 @@ app.get('/regras-confirmacao', async (req, res) => {
 // CONFIRMAR PRESENÇA (salva em AMBAS as tabelas ou em reservas)
 app.post('/confirmar', async (req, res) => {
   const { nome, tipo, genero } = req.body;
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  const isAdmin = await isAdminToken(token);
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.replace('Bearer ', '');
+  
+  console.log('🔍 POST /confirmar - Token:', token ? token.substring(0, 10) + '...' : 'sem token');
   
   if (!nome || !tipo || !genero) {
     return res.status(400).json({ erro: 'Nome, tipo e gênero são obrigatórios' });
   }
   
   try {
+    // VERIFICAR SE É ADMIN
+    let isAdmin = false;
+    if (token) {
+      const tokenResult = await pool.query(
+        'SELECT * FROM admin_tokens WHERE token = $1 AND expira_em > NOW()',
+        [token]
+      );
+      isAdmin = tokenResult.rows.length > 0;
+      console.log('Token válido:', isAdmin);
+    }
+    
     // VERIFICAR SE PODE CONFIRMAR (pula validação se for admin)
     if (!isAdmin) {
       const verificacao = verificarDisponibilidadeConfirmacao(tipo);
       if (!verificacao.permitido) {
+        console.log('❌ Bloqueado por regra de dia:', verificacao.mensagem);
         return res.status(403).json({ 
           sucesso: false, 
           erro: verificacao.mensagem,
           bloqueado: true 
         });
       }
+    } else {
+      console.log('✅ Admin bypass - sem validação de dia');
     }
     
     // Verifica se já tem 24 confirmados
@@ -317,6 +325,7 @@ app.post('/confirmar', async (req, res) => {
         [nome, tipo, genero]
       );
       
+      console.log('✅ Confirmação em reserva:', nome);
       return res.json({ sucesso: true, reserva: true, confirmado: resultReserva.rows[0] });
     }
     
@@ -332,6 +341,7 @@ app.post('/confirmar', async (req, res) => {
       [nome, tipo, genero]
     );
     
+    console.log('✅ Confirmação salva:', nome);
     res.json({ sucesso: true, reserva: false, confirmado: resultAtual.rows[0] });
   } catch (err) {
     console.error('Erro ao confirmar:', err);
