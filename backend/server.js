@@ -371,31 +371,6 @@ app.get('/confirmados', async (req, res) => {
 });
 
 // LISTAR AVULSOS CONFIRMADOS (para controle de cobrança)
-app.get('/avulsos-confirmados', async (req, res) => {
-  try {
-    // Busca avulsos confirmados (atual) com data
-    const confirmed = await pool.query(
-      'SELECT id, nome, tipo, genero, data_confirmacao FROM confirmados_atual WHERE tipo = $1 ORDER BY data_confirmacao DESC',
-      ['avulso']
-    );
-    
-    // Busca avulsos em reserva com data
-    const waitlist = await pool.query(
-      'SELECT id, nome, tipo, genero, data_reserva as data_confirmacao FROM reservas WHERE tipo = $1 ORDER BY data_reserva DESC',
-      ['avulso']
-    );
-    
-    res.json({
-      confirmados: confirmed.rows,
-      reservas: waitlist.rows,
-      total: confirmed.rows.length + waitlist.rows.length
-    });
-  } catch (err) {
-    console.error('Erro ao listar avulsos:', err);
-    res.status(500).json({ erro: 'Erro ao listar avulsos' });
-  }
-});
-
 // MARCAR AVULSO COMO PAGO
 app.post('/avulsos/:id/pago', verificarAdmin, async (req, res) => {
   const { id } = req.params;
@@ -459,6 +434,8 @@ app.get('/avulsos-confirmados', async (req, res) => {
       'SELECT id, nome, tipo, genero, data_reserva as data_confirmacao FROM reservas WHERE tipo = $1 ORDER BY data_reserva DESC',
       ['avulso']
     );
+    
+    console.log(`📋 GET /avulsos-confirmados - Confirmados: ${confirmed.rows.length}, Reservas: ${waitlist.rows.length}`);
     
     res.json({
       confirmados: confirmed.rows,
