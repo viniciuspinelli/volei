@@ -342,6 +342,156 @@ app.get('/confirmados', async (req, res) => {
   }
 });
 
+// LISTAR AVULSOS CONFIRMADOS (para controle de cobrança)
+app.get('/avulsos-confirmados', async (req, res) => {
+  try {
+    // Busca avulsos confirmados (atual) com data
+    const confirmed = await pool.query(
+      'SELECT id, nome, tipo, genero, data_confirmacao FROM confirmados_atual WHERE tipo = $1 ORDER BY data_confirmacao DESC',
+      ['avulso']
+    );
+    
+    // Busca avulsos em reserva com data
+    const waitlist = await pool.query(
+      'SELECT id, nome, tipo, genero, data_reserva as data_confirmacao FROM reservas WHERE tipo = $1 ORDER BY data_reserva DESC',
+      ['avulso']
+    );
+    
+    res.json({
+      confirmados: confirmed.rows,
+      reservas: waitlist.rows,
+      total: confirmed.rows.length + waitlist.rows.length
+    });
+  } catch (err) {
+    console.error('Erro ao listar avulsos:', err);
+    res.status(500).json({ erro: 'Erro ao listar avulsos' });
+  }
+});
+
+// MARCAR AVULSO COMO PAGO
+app.post('/avulsos/:id/pago', verificarAdmin, async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    // Adiciona coluna 'pago' se não existir (migração automática)
+    await pool.query(`
+      ALTER TABLE confirmados_atual 
+      ADD COLUMN IF NOT EXISTS pago BOOLEAN DEFAULT false
+    `);
+    
+    // Atualiza status de pago
+    const result = await pool.query(
+      'UPDATE confirmados_atual SET pago = TRUE WHERE id = $1 AND tipo = $2 RETURNING *',
+      [id, 'avulso']
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ erro: 'Avulso não encontrado' });
+    }
+    
+    res.json({ sucesso: true, avulso: result.rows[0] });
+  } catch (err) {
+    console.error('Erro ao marcar pago:', err);
+    res.status(500).json({ erro: 'Erro ao atualizar status' });
+  }
+});
+
+// DESMARCAR AVULSO COMO PAGO
+app.post('/avulsos/:id/nao-pago', verificarAdmin, async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const result = await pool.query(
+      'UPDATE confirmados_atual SET pago = FALSE WHERE id = $1 AND tipo = $2 RETURNING *',
+      [id, 'avulso']
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ erro: 'Avulso não encontrado' });
+    }
+    
+    res.json({ sucesso: true, avulso: result.rows[0] });
+  } catch (err) {
+    console.error('Erro ao desmarcar pago:', err);
+    res.status(500).json({ erro: 'Erro ao atualizar status' });
+  }
+});
+
+// LISTAR AVULSOS CONFIRMADOS (para controle de cobrança)
+app.get('/avulsos-confirmados', async (req, res) => {
+  try {
+    // Busca avulsos confirmados (atual) com data
+    const confirmed = await pool.query(
+      'SELECT id, nome, tipo, genero, data_confirmacao, pago FROM confirmados_atual WHERE tipo = $1 ORDER BY data_confirmacao DESC',
+      ['avulso']
+    );
+    
+    // Busca avulsos em reserva com data
+    const waitlist = await pool.query(
+      'SELECT id, nome, tipo, genero, data_reserva as data_confirmacao FROM reservas WHERE tipo = $1 ORDER BY data_reserva DESC',
+      ['avulso']
+    );
+    
+    res.json({
+      confirmados: confirmed.rows,
+      reservas: waitlist.rows,
+      total: confirmed.rows.length + waitlist.rows.length
+    });
+  } catch (err) {
+    console.error('Erro ao listar avulsos:', err);
+    res.status(500).json({ erro: 'Erro ao listar avulsos' });
+  }
+});
+
+// MARCAR AVULSO COMO PAGO
+app.post('/avulsos/:id/pago', verificarAdmin, async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    // Adiciona coluna 'pago' se não existir (migração automática)
+    await pool.query(`
+      ALTER TABLE confirmados_atual 
+      ADD COLUMN IF NOT EXISTS pago BOOLEAN DEFAULT false
+    `);
+    
+    // Atualiza status de pago
+    const result = await pool.query(
+      'UPDATE confirmados_atual SET pago = TRUE WHERE id = $1 AND tipo = $2 RETURNING *',
+      [id, 'avulso']
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ erro: 'Avulso não encontrado' });
+    }
+    
+    res.json({ sucesso: true, avulso: result.rows[0] });
+  } catch (err) {
+    console.error('Erro ao marcar pago:', err);
+    res.status(500).json({ erro: 'Erro ao atualizar status' });
+  }
+});
+
+// DESMARCAR AVULSO COMO PAGO
+app.post('/avulsos/:id/nao-pago', verificarAdmin, async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const result = await pool.query(
+      'UPDATE confirmados_atual SET pago = FALSE WHERE id = $1 AND tipo = $2 RETURNING *',
+      [id, 'avulso']
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ erro: 'Avulso não encontrado' });
+    }
+    
+    res.json({ sucesso: true, avulso: result.rows[0] });
+  } catch (err) {
+    console.error('Erro ao desmarcar pago:', err);
+    res.status(500).json({ erro: 'Erro ao atualizar status' });
+  }
+});
+
 // REMOVER CONFIRMADO ATUAL (não afeta histórico)
 app.delete('/confirmados/:id', async (req, res) => {
   const { id } = req.params;
