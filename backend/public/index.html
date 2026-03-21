@@ -208,39 +208,8 @@
       <!-- Página Avulsos (Admin Only) -->
       <section id="page-avulsos" class="page" style="display: none;">
         <div class="page-header">
-          <h1 class="page-title">💰 Controle de Avulsos & Admin</h1>
-          <p class="page-subtitle">Gerenciar avulsos e confirmações sem restrição de dias</p>
-        </div>
-        
-        <div class="card">
-          <h3 class="card-title">➕ Adicionar Confirmação (Admin)</h3>
-          <form id="formConfirmaAdmin">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-              <div class="form-group">
-                <label class="form-label">Nome</label>
-                <input type="text" id="nomeAdmin" placeholder="Digite o nome" required>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Tipo</label>
-                <select id="tipoAdmin" required>
-                  <option value="">Selecione</option>
-                  <option value="mensalista">Mensalista</option>
-                  <option value="avulso">Avulso</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Gênero</label>
-                <select id="generoAdmin" required>
-                  <option value="">Selecione</option>
-                  <option value="masculino">Masculino ♂</option>
-                  <option value="feminino">Feminino ♀</option>
-                </select>
-              </div>
-              <div class="form-group" style="align-self: flex-end;">
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Confirmar</button>
-              </div>
-            </div>
-          </form>
+          <h1 class="page-title">💰 Controle de Avulsos</h1>
+          <p class="page-subtitle">Avulsos que confirmaram - para controle de cobrança</p>
         </div>
         
         <div class="card">
@@ -293,6 +262,39 @@
         </div>
         <div id="mensagem" class="mensagem"></div>
         <div id="msgRegrasConfirmacao" class="mensagem aviso" style="display: none;"></div>
+        
+        <!-- Formulário Admin Only para Confirmar sem Restrição de Dias -->
+        <div class="card" id="cardFormConfirmaAdmin" style="display: none;">
+          <h3 class="card-title">➕ Adicionar Confirmação (Admin)</h3>
+          <form id="formConfirmaAdmin">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div class="form-group">
+                <label class="form-label">Nome</label>
+                <input type="text" id="nomeAdmin" placeholder="Digite o nome" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Tipo</label>
+                <select id="tipoAdmin" required>
+                  <option value="">Selecione</option>
+                  <option value="mensalista">Mensalista</option>
+                  <option value="avulso">Avulso</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Gênero</label>
+                <select id="generoAdmin" required>
+                  <option value="">Selecione</option>
+                  <option value="masculino">Masculino ♂</option>
+                  <option value="feminino">Feminino ♀</option>
+                </select>
+              </div>
+              <div class="form-group" style="align-self: flex-end;">
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Confirmar</button>
+              </div>
+            </div>
+          </form>
+        </div>
+        
         <div class="card">
           <h3 class="card-title">Confirmados <span class="contador-badge" id="contadorConfirmados">0</span></h3>
           <button class="btn btn-danger" id="limparConfirmados" style="margin-bottom: 16px;">Limpar Lista</button>
@@ -479,6 +481,7 @@
       document.getElementById('btnLogoutMobile').style.display = isAdmin ? 'flex' : 'none';
       document.getElementById('btnAvulsosSidebar').style.display = isAdmin ? 'flex' : 'none';
       document.getElementById('btnAvulsosMobile').style.display = isAdmin ? 'flex' : 'none';
+      document.getElementById('cardFormConfirmaAdmin').style.display = isAdmin ? 'block' : 'none';
       if (isAdmin && window.ultimoSorteio) renderizarTimes();
     }
 
