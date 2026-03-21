@@ -186,6 +186,10 @@
           <span class="icon">📊</span>
           <span>Estatísticas</span>
         </button>
+        <button class="nav-item" id="btnAvulsosSidebar" data-page="avulsos" style="display:none;">
+          <span class="icon">💰</span>
+          <span>Avulsos</span>
+        </button>
       </nav>
       <div class="sidebar-admin">
         <button class="nav-item" id="btnAdminSidebar" onclick="abrirLogin()">
@@ -215,24 +219,6 @@
               <input type="checkbox" id="filtrarPagos" style="margin-right: 4px;"> Mostrar apenas pagos
             </label>
           </div>
-          <ul class="lista-confirmados" id="listaAvulsos"></ul>
-        </div>
-        
-        <div class="card">
-          <h3 class="card-title">Avulsos em Reserva <span class="contador-badge" id="totalReservasAvulsos">0</span></h3>
-          <ul class="lista-confirmados" id="listaReservasAvulsos"></ul>
-        </div>
-      </section>
-      
-      <!-- Página Avulsos (Admin Only) -->
-      <section id="page-avulsos" class="page" style="display: none;">
-        <div class="page-header">
-          <h1 class="page-title">💰 Controle de Avulsos</h1>
-          <p class="page-subtitle">Avulsos que confirmaram - para controle de cobrança</p>
-        </div>
-        
-        <div class="card">
-          <h3 class="card-title">Avulsos Confirmados <span class="contador-badge" id="totalAvulsos">0</span></h3>
           <ul class="lista-confirmados" id="listaAvulsos"></ul>
         </div>
         
@@ -355,6 +341,10 @@
         <span class="icon">📊</span>
         <span>Estatísticas</span>
       </button>
+      <button class="bottom-nav-item" id="btnAvulsosMobile" data-page="avulsos" style="display:none;">
+        <span class="icon">💰</span>
+        <span>Avulsos</span>
+      </button>
       <button class="bottom-nav-item" id="btnAdminMobile" onclick="abrirLogin()">
         <span class="icon">🔐</span>
         <span>Admin</span>
@@ -456,7 +446,9 @@
       document.getElementById('btnLogoutSidebar').style.display = isAdmin ? 'flex' : 'none';
       document.getElementById('btnAdminMobile').style.display = isAdmin ? 'none' : 'flex';
       document.getElementById('btnLogoutMobile').style.display = isAdmin ? 'flex' : 'none';
-      if (window.ultimoSorteio) renderizarTimes();
+      document.getElementById('btnAvulsosSidebar').style.display = isAdmin ? 'flex' : 'none';
+      document.getElementById('btnAvulsosMobile').style.display = isAdmin ? 'flex' : 'none';
+      if (isAdmin && window.ultimoSorteio) renderizarTimes();
     }
 
     // NAVEGAÇÃO
@@ -467,6 +459,7 @@
       document.getElementById(`page-${pageId}`).classList.add('active');        
       navItems.forEach(item => item.classList.toggle('active', item.dataset.page === pageId));
       if (pageId === 'estatisticas') carregarEstatisticas();
+      if (pageId === 'avulsos') atualizarListaAvulsos();
     }
     navItems.forEach(item => item.addEventListener('click', () => navigateTo(item.dataset.page)));
     // ATUALIZAR LISTA (CAP 24)
@@ -1133,120 +1126,6 @@ btn.addEventListener('click', () => marcarAvulsoComoPago(a.id, !a.pago));
         }
       } catch (err) {
         mostrarMensagem('Erro ao atualizar status', 'erro');
-      }
-    }
-
-    // CARREGAR LISTA DE AVULSOS
-    async function atualizarListaAvulsos() {
-      try {
-        const res = await fetch('/avulsos-confirmados');
-        const data = await res.json();
-        
-        const confirmados = data.confirmados || [];
-        const reservas = data.reservas || [];
-        
-        // Atualizar contador
-        const totalAvulsos = document.getElementById('totalAvulsos');
-        if (totalAvulsos) totalAvulsos.textContent = confirmados.length;
-        
-        const totalReservas = document.getElementById('totalReservasAvulsos');
-        if (totalReservas) totalReservas.textContent = reservas.length;
-        
-        // Renderizar confirmados
-        const ulConfirmados = document.getElementById('listaAvulsos');
-        if (ulConfirmados) {
-          ulConfirmados.innerHTML = '';
-          
-          confirmados.forEach((a, i) => {
-            const li = document.createElement('li');
-            li.className = 'lista-item';
-            
-            const info = document.createElement('div');
-            info.className = 'info';
-            
-            const nome = document.createElement('span');
-            nome.className = 'nome';
-            nome.textContent = `${i + 1}. ${a.nome}`;
-            
-            const data = document.createElement('span');
-            data.className = 'badge badge-avulso';
-            data.style.marginLeft = '8px';
-            const dataFormatada = new Date(a.data_confirmacao).toLocaleDateString('pt-BR');
-            data.textContent = dataFormatada;
-            data.title = 'Data de confirmação';
-            
-            const statusPago = a.pago ? '✅ PAGO' : '❌ NÃO PAGO';
-            const statusBadge = document.createElement('span');
-            statusBadge.className = 'badge';
-            statusBadge.style.marginLeft = '8px';
-            statusBadge.style.backgroundColor = a.pago ? 'rgba(52,211,153,0.2)' : 'rgba(239,68,68,0.2)';
-            statusBadge.style.color = a.pago ? '#34d399' : '#ef4444';
-            statusBadge.textContent = statusPago;
-            
-            info.appendChild(nome);
-            info.appendChild(data);
-            info.appendChild(statusBadge);
-            li.appendChild(info);
-            
-            const btn = document.createElement('button');
-            btn.className = 'btn btn-secondary';
-            btn.style.padding = '6px 10px';
-            btn.textContent = a.pago ? 'Marcar Não Pago' : 'Marcar Pago';
-            btn.addEventListener('click', () => marcarAvulsoComoPago(a.id, !a.pago));
-            
-            li.appendChild(btn);
-            ulConfirmados.appendChild(li);
-          });
-          
-          if (confirmados.length === 0) {
-            const li = document.createElement('li');
-            li.style.textAlign = 'center';
-            li.style.color = 'var(--text-muted)';
-            li.textContent = 'Nenhum avulso confirmado';
-            ulConfirmados.appendChild(li);
-          }
-        }
-        
-        // Renderizar reservas
-        const ulReservas = document.getElementById('listaReservasAvulsos');
-        if (ulReservas) {
-          ulReservas.innerHTML = '';
-          
-          reservas.forEach((a, i) => {
-            const li = document.createElement('li');
-            li.className = 'lista-item';
-            
-            const info = document.createElement('div');
-            info.className = 'info';
-            
-            const nome = document.createElement('span');
-            nome.className = 'nome';
-            nome.textContent = `${i + 1}. ${a.nome} (RESERVA)`;
-            nome.style.color = '#94a3b8';
-            
-            const data = document.createElement('span');
-            data.className = 'badge badge-avulso';
-            data.style.marginLeft = '8px';
-            const dataFormatada = new Date(a.data_confirmacao).toLocaleDateString('pt-BR');
-            data.textContent = dataFormatada;
-            
-            info.appendChild(nome);
-            info.appendChild(data);
-            li.appendChild(info);
-            ulReservas.appendChild(li);
-          });
-          
-          if (reservas.length === 0) {
-            const li = document.createElement('li');
-            li.style.textAlign = 'center';
-            li.style.color = 'var(--text-muted)';
-            li.textContent = 'Nenhuma reserva de avulso';
-            ulReservas.appendChild(li);
-          }
-        }
-        
-      } catch (err) {
-        console.error('Erro ao carregar avulsos:', err);
       }
     }
 
