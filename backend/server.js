@@ -116,6 +116,20 @@ async function initDB() {
 
 initDB();
 
+// FUNÇÃO: Verificar se token é válido (retorna bool)
+async function isAdminToken(token) {
+  if (!token) return false;
+  try {
+    const result = await pool.query(
+      'SELECT * FROM admin_tokens WHERE token = $1 AND expira_em > NOW()',
+      [token]
+    );
+    return result.rows.length > 0;
+  } catch (err) {
+    return false;
+  }
+}
+
 // MIDDLEWARE: Verificar token admin
 async function verificarAdmin(req, res, next) {
   const token = req.headers.authorization?.replace('Bearer ', '');
@@ -266,20 +280,24 @@ app.get('/regras-confirmacao', async (req, res) => {
 // CONFIRMAR PRESENÇA (salva em AMBAS as tabelas ou em reservas)
 app.post('/confirmar', async (req, res) => {
   const { nome, tipo, genero } = req.body;
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  const isAdmin = await isAdminToken(token);
   
   if (!nome || !tipo || !genero) {
     return res.status(400).json({ erro: 'Nome, tipo e gênero são obrigatórios' });
   }
   
   try {
-    // VERIFICAR SE PODE CONFIRMAR
-    const verificacao = verificarDisponibilidadeConfirmacao(tipo);
-    if (!verificacao.permitido) {
-      return res.status(403).json({ 
-        sucesso: false, 
-        erro: verificacao.mensagem,
-        bloqueado: true 
-      });
+    // VERIFICAR SE PODE CONFIRMAR (pula validação se for admin)
+    if (!isAdmin) {
+      const verificacao = verificarDisponibilidadeConfirmacao(tipo);
+      if (!verificacao.permitido) {
+        return res.status(403).json({ 
+          sucesso: false, 
+          erro: verificacao.mensagem,
+          bloqueado: true 
+        });
+      }
     }
     
     // Verifica se já tem 24 confirmados

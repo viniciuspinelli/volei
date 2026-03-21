@@ -208,8 +208,39 @@
       <!-- Página Avulsos (Admin Only) -->
       <section id="page-avulsos" class="page" style="display: none;">
         <div class="page-header">
-          <h1 class="page-title">💰 Controle de Avulsos</h1>
-          <p class="page-subtitle">Avulsos que confirmaram - para controle de cobrança</p>
+          <h1 class="page-title">💰 Controle de Avulsos & Admin</h1>
+          <p class="page-subtitle">Gerenciar avulsos e confirmações sem restrição de dias</p>
+        </div>
+        
+        <div class="card">
+          <h3 class="card-title">➕ Adicionar Confirmação (Admin)</h3>
+          <form id="formConfirmaAdmin">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div class="form-group">
+                <label class="form-label">Nome</label>
+                <input type="text" id="nomeAdmin" placeholder="Digite o nome" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Tipo</label>
+                <select id="tipoAdmin" required>
+                  <option value="">Selecione</option>
+                  <option value="mensalista">Mensalista</option>
+                  <option value="avulso">Avulso</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Gênero</label>
+                <select id="generoAdmin" required>
+                  <option value="">Selecione</option>
+                  <option value="masculino">Masculino ♂</option>
+                  <option value="feminino">Feminino ♀</option>
+                </select>
+              </div>
+              <div class="form-group" style="align-self: flex-end;">
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Confirmar</button>
+              </div>
+            </div>
+          </form>
         </div>
         
         <div class="card">
@@ -1129,12 +1160,70 @@ btn.addEventListener('click', () => marcarAvulsoComoPago(a.id, !a.pago));
       }
     }
 
+    // CONFIRMAR PRESENÇA COMO ADMIN (sem restrição de dias)
+    async function confirmarComoAdmin(e) {
+      e.preventDefault();
+      
+      const nome = document.getElementById('nomeAdmin').value.trim();
+      const tipo = document.getElementById('tipoAdmin').value;
+      const genero = document.getElementById('generoAdmin').value;
+      const token = localStorage.getItem('adminToken');
+      
+      if (!nome || !tipo || !genero) {
+        mostrarMensagem('Preencha todos os campos', 'erro');
+        return;
+      }
+      
+      if (!token) {
+        mostrarMensagem('Você não está logado como admin', 'erro');
+        return;
+      }
+      
+      try {
+        const res = await fetch('/confirmar', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ nome, tipo, genero })
+        });
+        
+        const data = await res.json();
+        
+        if (data.sucesso) {
+          const msg = data.reserva 
+            ? `✅ ${nome} adicionado(a) em RESERVA`
+            : `✅ ${nome} confirmado(a) como ${tipo}`;
+          mostrarMensagem(msg, 'sucesso');
+          
+          // Limpar formulário
+          document.getElementById('formConfirmaAdmin').reset();
+          
+          // Recarregar lista
+          atualizarLista();
+          atualizarListaAvulsos();
+        } else {
+          mostrarMensagem(data.erro || 'Erro ao confirmar', 'erro');
+        }
+      } catch (err) {
+        console.error('Erro:', err);
+        mostrarMensagem('Erro ao confirmar presença', 'erro');
+      }
+    }
+
     // INICIALIZA
     carregarRegrasConfirmacao();
     // Recarregar regras a cada minuto (para atualizar se mudar de dia)
     setInterval(carregarRegrasConfirmacao, 60000);
     atualizarLista();
     atualizarUIAdmin();
+    
+    // Event listener para formulário de admin
+    const formConfirmaAdmin = document.getElementById('formConfirmaAdmin');
+    if (formConfirmaAdmin) {
+      formConfirmaAdmin.addEventListener('submit', confirmarComoAdmin);
+    }
   </script>
 </body>
 </html>
