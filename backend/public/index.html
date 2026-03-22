@@ -938,17 +938,30 @@
     function atualizarUIAdmin() {
       const btnAdmin = document.getElementById('btnAdmin');
       if (btnAdmin) {
-        btnAdmin.style.display = isAdmin ? 'none' : 'flex';
-        btnAdmin.innerHTML = isAdmin ? '🚪 Sair' : '🔐 Admin';
-        if (isAdmin) btnAdmin.onclick = fazerLogout;
-        else btnAdmin.onclick = abrirLogin;
+        if (isAdmin) {
+          btnAdmin.innerHTML = '🚪 Sair';
+          btnAdmin.onclick = fazerLogout;
+          btnAdmin.style.color = 'var(--danger)';
+          btnAdmin.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+          btnAdmin.style.background = 'rgba(239, 68, 68, 0.15)';
+        } else {
+          btnAdmin.innerHTML = '🔐 Admin';
+          btnAdmin.onclick = abrirLogin;
+          btnAdmin.style.color = 'var(--accent-blue)';
+          btnAdmin.style.borderColor = 'rgba(125, 211, 252, 0.3)';
+          btnAdmin.style.background = 'rgba(125, 211, 252, 0.15)';
+        }
       }
     }
 
-    // Verificar se user é admin on load
-    if (isAdmin) {
+    // Inicializar UI admin ao carregar
+    window.addEventListener('DOMContentLoaded', () => {
       atualizarUIAdmin();
-    }
+      // Chamar função do app.js para carregar regras
+      if (typeof carregarRegrasConfirmacao === 'function') {
+        carregarRegrasConfirmacao();
+      }
+    });
   </script>
 
   <!-- App Logic -->
