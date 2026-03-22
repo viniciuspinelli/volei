@@ -1703,7 +1703,7 @@ function compartilharWhatsApp() {
       camera.position.z = 100;
 
       // Lighting
-      const light1 = new THREE.PointLight(0xff6b00, 0.8, 200);
+      const light1 = new THREE.PointLight(0x34d399, 0.8, 200);
       light1.position.set(50, 50, 50);
       scene.add(light1);
 
@@ -1728,7 +1728,7 @@ function compartilharWhatsApp() {
       // Wireframe overlay
       const wireframeGeometry = new THREE.IcosahedronGeometry(12, 3);
       const wireframeMaterial = new THREE.MeshBasicMaterial({
-        color: 0xff6b00,
+        color: 0x34d399,
         wireframe: true,
         transparent: true,
         opacity: 0.2
@@ -1752,7 +1752,7 @@ function compartilharWhatsApp() {
 
       const particlesMaterial = new THREE.PointsMaterial({
         size: 1.5,
-        color: 0xff6b00,
+        color: 0x34d399,
         sizeAttenuation: true,
         transparent: true,
         opacity: 0.4
@@ -1764,7 +1764,7 @@ function compartilharWhatsApp() {
       // Rotating Torus
       const torusGeometry = new THREE.TorusGeometry(60, 2, 16, 100);
       const torusMaterial = new THREE.MeshBasicMaterial({
-        color: 0xff6b00,
+        color: 0x34d399,
         wireframe: true,
         transparent: true,
         opacity: 0.15
