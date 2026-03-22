@@ -369,6 +369,77 @@
       color: var(--danger);
     }
 
+    .mensagem.aviso {
+      background: rgba(255, 193, 7, 0.1);
+      border-color: rgba(255, 193, 7, 0.3);
+      color: #ffc107;
+      font-weight: 600;
+    }
+
+    /* MODAL LOGIN */
+    .login-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(5px);
+    }
+
+    .login-modal.ativo {
+      display: flex;
+    }
+
+    .login-box {
+      background: rgba(19, 24, 41, 0.95);
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 350px;
+      width: 90%;
+      border: 1px solid rgba(52, 211, 153, 0.3);
+      box-shadow: 0 20px 60px rgba(52, 211, 153, 0.2);
+    }
+
+    .login-box h3 {
+      color: var(--accent-green);
+      margin-bottom: 24px;
+      text-align: center;
+      font-size: 20px;
+    }
+
+    .login-box input {
+      width: 100%;
+      margin-bottom: 14px;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(52, 211, 153, 0.2);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+
+    .login-box input:focus {
+      outline: none;
+      border-color: var(--accent-green);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .login-erro {
+      color: var(--danger);
+      font-size: 13px;
+      margin-bottom: 16px;
+      text-align: center;
+      display: none;
+      background: rgba(239, 68, 68, 0.1);
+      padding: 10px;
+      border-radius: 6px;
+    }
+
     /* LISTA */
     .lista-confirmados {
       list-style: none;
@@ -576,6 +647,7 @@
           </div>
         </div>
         <a href="estatisticas.html" class="btn-stats">📊 Estatísticas</a>
+        <button class="btn-stats" id="btnAdmin" onclick="abrirLogin()" style="color: var(--accent-blue); border-color: rgba(125, 211, 252, 0.3); background: rgba(125, 211, 252, 0.15);">🔐 Admin</button>
       </div>
     </header>
 
@@ -778,6 +850,105 @@
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
+  </script>
+
+  <!-- Modal Login Admin -->
+  <div class="login-modal" id="loginModal">
+    <div class="login-box">
+      <h3>🔐 Login Admin</h3>
+      <form onsubmit="event.preventDefault(); fazerLogin();">
+        <div class="login-erro" id="loginErro"></div>
+        <input type="text" id="loginUsuario" placeholder="Usuário" required>
+        <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password" required>
+        <button type="submit" class="btn btn-primary" style="margin-bottom: 8px;">Entrar</button>
+        <button type="button" class="btn btn-secondary" onclick="fecharLogin()">Cancelar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Admin Functions -->
+  <script>
+    // VARIÁVEIS GLOBAIS
+    let adminToken = localStorage.getItem('adminToken') || null;
+    let isAdmin = !!adminToken;
+
+    function mostrarMensagem(texto, tipo = '') {
+      const el = document.getElementById('mensagem');
+      el.textContent = texto;
+      el.className = `mensagem ${tipo}`;
+      setTimeout(() => { el.textContent = ''; el.className = 'mensagem'; }, 3000);
+    }
+
+    function abrirLogin() {
+      document.getElementById('loginModal').classList.add('ativo');
+      document.getElementById('loginUsuario').focus();
+    }
+    
+    function fecharLogin() {
+      document.getElementById('loginModal').classList.remove('ativo');
+      document.getElementById('loginUsuario').value = '';
+      document.getElementById('loginSenha').value = '';
+      document.getElementById('loginErro').style.display = 'none';
+    }
+    
+    async function fazerLogin() {
+      const usuario = document.getElementById('loginUsuario').value;
+      const senha = document.getElementById('loginSenha').value;
+      try {
+        const res = await fetch('/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usuario, senha })
+        });
+        const data = await res.json();
+        if (data.sucesso) {
+          adminToken = data.token;
+          localStorage.setItem('adminToken', adminToken);
+          isAdmin = true;
+          fecharLogin();
+          atualizarUIAdmin();
+          mostrarMensagem('Login realizado com sucesso!', 'sucesso');
+        } else {
+          document.getElementById('loginErro').textContent = data.erro || 'Credenciais inválidas';
+          document.getElementById('loginErro').style.display = 'block';
+        }
+      } catch (err) {
+        document.getElementById('loginErro').textContent = 'Erro de conexão';
+        document.getElementById('loginErro').style.display = 'block';
+      }
+    }
+    
+    async function fazerLogout() {
+      if (adminToken) {
+        try {
+          await fetch('/logout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: adminToken })
+          });
+        } catch (e) {}
+      }
+      adminToken = null;
+      isAdmin = false;
+      localStorage.removeItem('adminToken');
+      atualizarUIAdmin();
+      mostrarMensagem('Logout realizado', 'sucesso');
+    }
+    
+    function atualizarUIAdmin() {
+      const btnAdmin = document.getElementById('btnAdmin');
+      if (btnAdmin) {
+        btnAdmin.style.display = isAdmin ? 'none' : 'flex';
+        btnAdmin.innerHTML = isAdmin ? '🚪 Sair' : '🔐 Admin';
+        if (isAdmin) btnAdmin.onclick = fazerLogout;
+        else btnAdmin.onclick = abrirLogin;
+      }
+    }
+
+    // Verificar se user é admin on load
+    if (isAdmin) {
+      atualizarUIAdmin();
+    }
   </script>
 
   <!-- App Logic -->
