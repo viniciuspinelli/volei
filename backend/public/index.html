@@ -3,875 +3,423 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pagou-Jogou Volei Clube</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <title>Pagou-Jogou Vôlei Clube</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
     :root {
-      --bg-primary: #0a0e27;
-      --bg-secondary: #131829;
-      --bg-card: rgba(255, 255, 255, 0.05);
-      --text-primary: #e7f3ff;
-      --text-muted: #9fb3c8;
-      --accent-green: #34d399;
-      --accent-blue: #7dd3fc;
-      --accent-purple: #a78bfa;
+      --bg-primary: #000000;
+      --bg-secondary: #111111;
+      --bg-card: #1a1a1a;
+      --text-primary: #ffffff;
+      --text-muted: #888888;
+      --accent: #ff6b00;
+      --accent-light: #ff8533;
+      --accent-dark: #cc5500;
       --danger: #ef4444;
+      --spacing-xs: 4px;
+      --spacing-sm: 8px;
+      --spacing-md: 16px;
+      --spacing-lg: 24px;
+      --spacing-xl: 32px;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --sidebar-width: 240px;
     }
-
-    html, body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      font-family: 'Inter', system-ui, Arial, sans-serif;
-      background: linear-gradient(135deg, #0a0e27 0%, #131829 50%, #0f1629 100%);
-      color: var(--text-primary);
-    }
-
-    #canvas-container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 1;
-    }
-
-    .content {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 10;
-      overflow-y: auto;
-      overflow-x: hidden;
-    }
-
-    .content::-webkit-scrollbar {
-      width: 10px;
-    }
-
-    .content::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    .content::-webkit-scrollbar-thumb {
-      background: rgba(52, 211, 153, 0.3);
-      border-radius: 5px;
-    }
-
-    .content::-webkit-scrollbar-thumb:hover {
-      background: rgba(52, 211, 153, 0.6);
-    }
-
-    /* HEADER*/
-    header {
-      position: relative;
-      padding: 30px 40px;
-      backdrop-filter: blur(10px);
-      background: rgba(10, 14, 39, 0.7);
-      border-bottom: 1px solid rgba(52, 211, 153, 0.1);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .logo-brand {
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
-      font-size: 28px;
-      font-weight: 800;
-      letter-spacing: 2px;
-    }
-
-    .logo-brand .part1 {
-      background: linear-gradient(135deg, #e7f3ff, #7dd3fc);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .logo-brand .part2 {
-      color: var(--accent-green);
-      text-shadow: 0 0 20px rgba(52, 211, 153, 0.5);
-    }
-
-    .logo-brand .part3 {
-      font-size: 12px;
-      letter-spacing: 2px;
-      color: var(--text-muted);
-    }
-
-    .header-right {
-      display: flex;
-      gap: 20px;
-      align-items: center;
-    }
-
-    .stats-mini {
-      display: flex;
-      gap: 15px;
-      align-items: center;
-    }
-
-    .stat-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      padding: 8px 16px;
-      background: rgba(52, 211, 153, 0.1);
-      border-radius: 8px;
-      border: 1px solid rgba(52, 211, 153, 0.2);
-    }
-
-    .stat-value {
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--accent-green);
-    }
-
-    .stat-label {
-      font-size: 11px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .btn-stats {
-      padding: 10px 16px;
-      background: rgba(52, 211, 153, 0.15);
-      border: 1px solid rgba(52, 211, 153, 0.3);
-      border-radius: 8px;
-      color: var(--accent-green);
-      text-decoration: none;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-
-    .btn-stats:hover {
-      background: rgba(52, 211, 153, 0.25);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 16px rgba(52, 211, 153, 0.2);
-    }
-
-    /* MAIN CONTAINER */
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 40px 20px;
-    }
-
-    .section-title {
-      font-size: 32px;
-      font-weight: 800;
-      margin-bottom: 10px;
-      background: linear-gradient(135deg, #e7f3ff, var(--accent-green));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .section-subtitle {
-      color: var(--text-muted);
-      margin-bottom: 30px;
-      font-size: 14px;
-    }
-
-    /* CARD STYLES */
-    .card {
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(52, 211, 153, 0.1);
-      border-radius: 16px;
-      padding: 30px;
-      margin-bottom: 24px;
-      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(52, 211, 153, 0.5), transparent);
-    }
-
-    .card:hover {
-      background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(52, 211, 153, 0.3);
-      box-shadow: 0 20px 40px rgba(52, 211, 153, 0.1);
-      transform: translateY(-5px);
-    }
-
-    .card-title {
-      font-size: 18px;
-      font-weight: 700;
-      margin-bottom: 20px;
-      color: var(--text-primary);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .card-title span {
-      color: var(--accent-green);
-      font-size: 24px;
-    }
-
-    /* FORM STYLES */
-    .form-group {
-      margin-bottom: 16px;
-    }
-
-    label {
-      display: block;
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-bottom: 8px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      font-weight: 600;
-    }
-
-    input, select {
-      width: 100%;
-      padding: 14px 16px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(52, 211, 153, 0.2);
-      border-radius: 10px;
-      color: var(--text-primary);
-      font-size: 14px;
-      font-family: inherit;
-      transition: all 0.3s;
-    }
-
-    input::placeholder {
-      color: var(--text-muted);
-    }
-
-    input:focus, select:focus {
-      outline: none;
-      background: rgba(255, 255, 255, 0.08);
-      border-color: var(--accent-green);
-      box-shadow: 0 0 15px rgba(52, 211, 153, 0.2);
-    }
-
-    select {
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2334d399' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 14px center;
-      padding-right: 40px;
-    }
-
-    select option {
-      background: #131829;
-      color: #e7f3ff;
-    }
-
-    .form-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-
-    /* BUTTONS */
-    .btn {
-      padding: 14px 24px;
-      border: none;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.3s;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      width: 100%;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent-green), #10b981);
-      color: #000;
-      box-shadow: 0 8px 24px rgba(52, 211, 153, 0.3);
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 12px 32px rgba(52, 211, 153, 0.5);
-    }
-
-    .btn-primary:active {
-      transform: translateY(-1px);
-    }
-
-    .btn-secondary {
-      background: rgba(52, 211, 153, 0.1);
-      color: var(--accent-green);
-      border: 1px solid rgba(52, 211, 153, 0.3);
-      margin-left: 12px;
-    }
-
-    .btn-secondary:hover {
-      background: rgba(52, 211, 153, 0.2);
-      border-color: var(--accent-green);
-    }
-
-    /* MESSAGE */
-    .mensagem {
-      padding: 16px 20px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      font-size: 14px;
-      min-height: 24px;
-      backdrop-filter: blur(10px);
-      border: 1px solid transparent;
-      animation: slideIn 0.3s ease-out;
-    }
-
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(-10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .mensagem.sucesso {
-      background: rgba(52, 211, 153, 0.1);
-      border-color: rgba(52, 211, 153, 0.3);
-      color: var(--accent-green);
-    }
-
-    .mensagem.erro {
-      background: rgba(239, 68, 68, 0.1);
-      border-color: rgba(239, 68, 68, 0.3);
-      color: var(--danger);
-    }
-
-    .mensagem.aviso {
-      background: rgba(255, 193, 7, 0.1);
-      border-color: rgba(255, 193, 7, 0.3);
-      color: #ffc107;
-      font-weight: 600;
-    }
-
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Inter, system-ui, Arial, sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; }
+    
+    /* LAYOUT */
+    .app-container { display: flex; min-height: 100vh; }
+    .sidebar { width: var(--sidebar-width); background: var(--bg-secondary); border-right: 1px solid rgba(255,255,255,0.05); padding: var(--spacing-lg); display: flex; flex-direction: column; position: fixed; height: 100vh; left: 0; top: 0; }
+    .sidebar-logo { display: flex; align-items: baseline; gap: 4px; font-weight: 700; letter-spacing: 1px; font-size: 18px; margin-bottom: var(--spacing-xl); padding-bottom: var(--spacing-lg); border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .sidebar-logo .part1 { color: var(--text-primary); }
+    .sidebar-logo .part2 { color: #34d399; }
+    .sidebar-nav { display: flex; flex-direction: column; gap: var(--spacing-sm); flex: 1; }
+    .nav-item { display: flex; align-items: center; gap: var(--spacing-md); padding: 14px 16px; border-radius: var(--radius-md); color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s; cursor: pointer; border: none; background: transparent; width: 100%; text-align: left; }
+    .nav-item-admin { display: none; }
+    .nav-item-admin.visible { display: flex; }
+    .nav-item-admin { display: none; }
+    .nav-item-admin.visible { display: flex; }
+    .nav-item:hover { background: rgba(255, 107, 0, 0.1); color: var(--text-primary); }
+    .nav-item.active { background: rgba(255, 107, 0, 0.15); color: var(--accent); border-left: 3px solid var(--accent); }
+    .sidebar-admin { border-top: 1px solid rgba(255,255,255,0.05); padding-top: var(--spacing-md); margin-top: auto; }
+    .nav-item.admin-logged { color: var(--accent); }
+    
+    .main-content { flex: 1; margin-left: var(--sidebar-width); padding: var(--spacing-xl); min-height: 100vh; }
+    .page { display: none; max-width: 800px; margin: 0 auto; }
+    .page.active { display: block; }
+    .page-header { margin-bottom: var(--spacing-xl); }
+    .page-title { font-size: 28px; font-weight: 700; color: var(--text-primary); margin-bottom: var(--spacing-xs); }
+    .page-subtitle { color: var(--text-muted); font-size: 14px; }
+    
+    /* CARDS & FORM */
+    .card { background: var(--bg-card); border-radius: var(--radius-lg); padding: var(--spacing-lg); margin-bottom: var(--spacing-lg); border: 1px solid rgba(255,255,255,0.05); }
+    .card-title { font-size: 16px; font-weight: 600; margin-bottom: var(--spacing-md); display: flex; align-items: center; gap: var(--spacing-sm); }
+    .form-group { margin-bottom: var(--spacing-md); }
+    .form-label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: var(--spacing-xs); }
+    input, select { width: 100%; height: 48px; padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: var(--text-primary); font-size: 15px; transition: border-color 0.2s; }
+    input:focus, select:focus { outline: none; border-color: var(--accent); }
+    
+    /* BOTÕES */
+    .btn { height: 48px; padding: 12px 20px; border-radius: var(--radius-md); border: none; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: var(--spacing-sm); }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #000; }
+    .btn-primary:hover { background: linear-gradient(135deg, var(--accent-light), var(--accent)); transform: translateY(-1px); }
+    .btn-secondary { background: rgba(255,107,0,0.15); border: 1px solid rgba(255,107,0,0.3); color: var(--accent); }
+    .btn-secondary:hover { background: rgba(255,107,0,0.25); }
+    .btn-danger { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: var(--danger); }
+    .btn-danger:hover { background: rgba(239,68,68,0.25); }
+    .btn-block { width: 100%; }
+    
+    /* LISTA CONFIRMADOS */
+    .contador-badge { background: rgba(255,107,0,0.2); color: var(--accent); padding: 4px 10px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; }
+    .lista-confirmados { list-style: none; }
+    .lista-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 12px; border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.2s; }
+    .lista-item:hover { background: rgba(255,255,255,0.02); }
+    .lista-item.avulso { border-left: 3px solid var(--accent); background: rgba(255,107,0,0.03); }
+    .lista-item .info { display: flex; align-items: center; gap: var(--spacing-sm); flex-wrap: wrap; }
+    .lista-item .nome { font-weight: 500; }
+    .badge { display: inline-block; padding: 3px 8px; border-radius: var(--radius-sm); font-size: 11px; font-weight: 600; text-transform: uppercase; }
+    .badge-mensalista { background: rgba(59,130,246,0.2); color: #60a5fa; }
+    .badge-avulso { background: rgba(255,107,0,0.2); color: var(--accent); }
+    .badge-masculino { background: rgba(59,130,246,0.15); color: #60a5fa; }
+    .badge-feminino { background: rgba(236,100,155,0.15); color: #ff6b9d; }
+    .btn-remove { padding: 8px 12px; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.2); border-radius: var(--radius-sm); color: var(--danger); font-size: 12px; cursor: pointer; transition: all 0.2s; }
+    .btn-remove:hover { background: rgba(239,68,68,0.25); }
+    
+    /* TIMES */
+    .times-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--spacing-md); }
+    .time-card { background: rgba(255,255,255,0.02); border-radius: var(--radius-md); padding: var(--spacing-md); border: 1px solid rgba(255,255,255,0.05); }
+    .time-card h4 { color: var(--accent); font-size: 15px; margin-bottom: var(--spacing-sm); padding-bottom: var(--spacing-sm); border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .time-card ul { list-style: none; }
+    .time-card li { font-size: 14px; padding: 6px 0; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+    
+    /* DRAG AND DROP ADMIN */
+    .time-card li.draggable { cursor: grab; padding: 8px 10px; margin: 4px 0; background: rgba(255,255,255,0.03); border-radius: var(--radius-sm); border: 1px solid transparent; transition: all 0.2s; }
+    .time-card li.draggable:hover { background: rgba(255,107,0,0.1); border-color: rgba(255,107,0,0.3); }
+    .time-card li.dragging { opacity: 0.5; cursor: grabbing; }
+    .time-card li.drag-over { border-color: var(--accent); background: rgba(255,107,0,0.2); }
+    .time-card ul.drag-target { min-height: 100px; }
+    .admin-hint { font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 12px; padding: 8px; background: rgba(255,107,0,0.1); border-radius: var(--radius-sm); }
+    
+    .btn-whatsapp { background: rgba(37,211,102,0.15); border: 1px solid rgba(37,211,102,0.3); color: #25d366; }
+    .btn-whatsapp:hover { background: rgba(37,211,102,0.25); }
+    
+    /* ESTATÍSTICAS */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-md); margin-bottom: var(--spacing-lg); }
+    .stat-card { background: rgba(255,255,255,0.02); border-radius: var(--radius-md); padding: var(--spacing-lg); text-align: center; border: 1px solid rgba(255,255,255,0.05); }
+    .stat-value { font-size: 36px; font-weight: 700; color: var(--accent); }
+    .stat-label { font-size: 13px; color: var(--text-muted); margin-top: var(--spacing-xs); }
+    .ranking-list { list-style: none; }
+    .ranking-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.2s; }
+    .ranking-item:hover { background: rgba(255,255,255,0.02); }
+    .ranking-item .ranking-left { display: flex; align-items: center; }
+    .ranking-item .pos { width: 30px; height: 30px; background: rgba(255,107,0,0.15); color: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; margin-right: var(--spacing-md); }
+    .ranking-item .pos.top-3 { background: var(--accent); color: #000; }
+    .ranking-item .ranking-right { display: flex; align-items: center; gap: var(--spacing-md); }
+    .ranking-item .count { color: var(--text-muted); font-size: 14px; }
+    .empty-state { text-align: center; padding: var(--spacing-xl); color: var(--text-muted); }
+    
     /* MODAL LOGIN */
-    .login-modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      z-index: 2000;
-      align-items: center;
-      justify-content: center;
-      backdrop-filter: blur(5px);
-    }
-
-    .login-modal.ativo {
-      display: flex;
-    }
-
-    .login-box {
-      background: rgba(19, 24, 41, 0.95);
-      border-radius: 16px;
-      padding: 32px;
-      max-width: 350px;
-      width: 90%;
-      border: 1px solid rgba(52, 211, 153, 0.3);
-      box-shadow: 0 20px 60px rgba(52, 211, 153, 0.2);
-    }
-
-    .login-box h3 {
-      color: var(--accent-green);
-      margin-bottom: 24px;
-      text-align: center;
-      font-size: 20px;
-    }
-
-    .login-box input {
-      width: 100%;
-      margin-bottom: 14px;
-      padding: 12px 16px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(52, 211, 153, 0.2);
-      border-radius: 8px;
-      color: var(--text-primary);
-      font-size: 14px;
-    }
-
-    .login-box input:focus {
-      outline: none;
-      border-color: var(--accent-green);
-      background: rgba(255, 255, 255, 0.08);
-    }
-
-    .login-erro {
-      color: var(--danger);
-      font-size: 13px;
-      margin-bottom: 16px;
-      text-align: center;
-      display: none;
-      background: rgba(239, 68, 68, 0.1);
-      padding: 10px;
-      border-radius: 6px;
-    }
-
-    /* LISTA */
-    .lista-confirmados {
-      list-style: none;
-    }
-
-    .lista-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 16px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-      transition: all 0.2s;
-    }
-
-    .lista-item:hover {
-      background: rgba(52, 211, 153, 0.05);
-    }
-
-    .lista-item.avulso {
-      border-left: 3px solid var(--accent-green);
-      background: rgba(52, 211, 153, 0.03);
-    }
-
-    .lista-item-info {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex: 1;
-    }
-
-    .lista-item-name {
-      font-weight: 500;
-      color: var(--text-primary);
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 4px 10px;
-      background: rgba(52, 211, 153, 0.15);
-      color: var(--accent-green);
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .badge.mensalista {
-      background: rgba(125, 211, 252, 0.15);
-      color: var(--accent-blue);
-    }
-
-    .btn-remove {
-      padding: 6px 12px;
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      color: var(--danger);
-      border-radius: 6px;
-      font-size: 12px;
-      cursor: pointer;
-      transition: all 0.2s;
-      font-weight: 600;
-    }
-
-    .btn-remove:hover {
-      background: rgba(239, 68, 68, 0.25);
-    }
-
-    /* CONTADOR */
-    .contador-badge {
-      background: rgba(52, 211, 153, 0.2);
-      color: var(--accent-green);
-      padding: 4px 12px;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    /* RESULTADO SORTEIO */
-    #resultadoSorteio {
-      margin-top: 20px;
-      padding: 20px;
-      background: rgba(52, 211, 153, 0.05);
-      border: 1px solid rgba(52, 211, 153, 0.2);
-      border-radius: 10px;
-      color: var(--text-primary);
-    }
-
-    #resultadoSorteio h3 {
-      color: var(--accent-green);
-      margin-bottom: 16px;
-      font-size: 16px;
-    }
-
-    #resultadoSorteio .time {
-      margin-bottom: 16px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid rgba(52, 211, 153, 0.1);
-    }
-
-    #resultadoSorteio .time:last-child {
-      border-bottom: none;
-      margin-bottom: 0;
-      padding-bottom: 0;
-    }
-
-    #resultadoSorteio .time h4 {
-      color: var(--accent-green);
-      font-size: 14px;
-      margin-bottom: 8px;
-    }
-
-    #resultadoSorteio ul {
-      list-style: none;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    #resultadoSorteio li {
-      padding: 6px 10px;
-      background: rgba(52, 211, 153, 0.1);
-      border-radius: 6px;
-      font-size: 13px;
-    }
-
-    /* MOBILE */
+    .login-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; align-items: center; justify-content: center; }
+    .login-modal.ativo { display: flex; }
+    .login-box { background: var(--bg-card); border-radius: var(--radius-lg); padding: 30px; max-width: 350px; width: 90%; border: 1px solid rgba(255,107,0,0.3); }
+    .login-box h3 { color: var(--accent); margin-bottom: 20px; text-align: center; }
+    .login-box input { width: 100%; margin-bottom: 12px; }
+    .login-erro { color: var(--danger); font-size: 13px; margin-bottom: 12px; text-align: center; display: none; }
+    
+    /* MENSAGEM */
+    .mensagem { text-align: center; padding: var(--spacing-md); margin-bottom: var(--spacing-md); border-radius: var(--radius-md); font-size: 14px; min-height: 20px; }
+    .mensagem.sucesso { background: rgba(52,211,153,0.1); color: #34d399; }
+    .mensagem.erro { background: rgba(239,68,68,0.1); color: var(--danger); }
+    .mensagem.aviso { background: rgba(255,177,66,0.1); color: #ffa500; font-weight: 600; }
+    
+    /* BOTTOM NAV MOBILE */
+    .bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-secondary); border-top: 1px solid rgba(255,255,255,0.05); padding: var(--spacing-sm) 0; z-index: 1000; }
+    .bottom-nav-items { display: flex; justify-content: space-around; align-items: center; }
+    .bottom-nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 16px; color: var(--text-muted); text-decoration: none; font-size: 11px; font-weight: 500; border: none; background: transparent; cursor: pointer; transition: color 0.2s; }
+    .bottom-nav-item .icon { font-size: 22px; }
+    .bottom-nav-item.active { color: var(--accent); }
+    .bottom-nav-item.admin-logged { color: var(--accent); }
+    
+    /* RESPONSIVO */
     @media (max-width: 768px) {
-      header {
-        flex-direction: column;
-        gap: 20px;
-        padding: 20px;
-      }
-
-      .logo-brand {
-        font-size: 22px;
-      }
-
-      .header-right {
-        flex-direction: column;
-        width: 100%;
-        gap: 12px;
-      }
-
-      .btn-stats {
-        width: 100%;
-      }
-
-      .form-row {
-        grid-template-columns: 1fr;
-      }
-
-      .btn-secondary {
-        margin-left: 0;
-        margin-top: 8px;
-      }
-
-      .stats-mini {
-        width: 100%;
-        flex-wrap: wrap;
-      }
-
-      .container {
-        padding: 20px 12px 120px 12px;
-      }
-
-      .content {
-        padding-bottom: 60px;
-      }
+      .sidebar { display: none; }
+      .main-content { margin-left: 0; padding: var(--spacing-md); padding-bottom: 100px; }
+      .bottom-nav { display: block; }
+      .page-title { font-size: 22px; }
+      .times-grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
     }
+    .times-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+}
 
-    .button-group {
-      display: flex;
-      gap: 12px;
-      margin-top: 20px;
-    }
+@media (max-width: 768px) {
+  .times-grid {
+    grid-template-columns: 1fr;
+  }
+}
 
-    .button-group .btn {
-      flex: 1;
-      margin: 0;
-    }
   </style>
 </head>
 <body>
-  <!-- Three.js Canvas -->
-  <div id="canvas-container"></div>
-
-  <!-- Content -->
-  <div class="content">
-    <header>
-      <div class="logo-brand">
+  <div class="app-container">
+    <!-- Sidebar Desktop -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
         <span class="part1">PAGOU</span>
         <span class="part2">JOGOU</span>
-        <span class="part3">VOLEI</span>
       </div>
-      <div class="header-right">
-        <div class="stats-mini">
-          <div class="stat-item">
-            <div class="stat-value" id="contadorConfirmados">0</div>
-            <div class="stat-label">Confirmados</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-value" id="contadorReservas">0</div>
-            <div class="stat-label">Reserva</div>
-          </div>
-        </div>
-        <a href="estatisticas.html" class="btn-stats">📊 Estatísticas</a>
-        <button class="btn-stats" id="btnAdmin" onclick="abrirLogin()" style="color: var(--accent-blue); border-color: rgba(125, 211, 252, 0.3); background: rgba(125, 211, 252, 0.15);">🔐 Admin</button>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-page="confirmados">
+          <span class="icon">📋</span>
+          <span>Confirmados</span>
+        </button>
+        <button class="nav-item" data-page="sorteio">
+          <span class="icon">🎲</span>
+          <span>Sorteio</span>
+        </button>
+        <button class="nav-item" data-page="estatisticas">
+          <span class="icon">📊</span>
+          <span>Estatísticas</span>
+        </button>
+        <button class="nav-item" id="btnAvulsosSidebar" data-page="avulsos" style="display:none;">
+          <span class="icon">💰</span>
+          <span>Avulsos</span>
+        </button>
+      </nav>
+      <div class="sidebar-admin">
+        <button class="nav-item" id="btnAdminSidebar" onclick="abrirLogin()">
+          <span class="icon">🔐</span>
+          <span>Admin</span>
+        </button>
+        <button class="nav-item admin-logged" id="btnLogoutSidebar" onclick="fazerLogout()" style="display:none;">
+          <span class="icon">🚪</span>
+          <span>Sair</span>
+        </button>
       </div>
-    </header>
-
-    <div class="container">
-      <div class="section-title">Confirme sua presença</div>
-      <div class="section-subtitle">Vem jogar com a gente!</div>
-
-      <div class="card">
-        <div class="card-title">
-          <span>✍️</span>
-          Sua Confirmação
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Página Avulsos (Admin Only) -->
+      <section id="page-avulsos" class="page">
+        <div class="page-header">
+          <h1 class="page-title">💰 Controle de Avulsos</h1>
+          <p class="page-subtitle">Avulsos que confirmaram - para controle de cobrança</p>
         </div>
-        <form id="formConfirma">
-          <div class="form-group">
-            <label>Nome</label>
-            <input type="text" id="nome" placeholder="Digite seu nome completo" required />
+
+        <div class="card">
+          <h3 class="card-title">Total de Avulsos <span class="contador-badge" id="totalAvulsosGeral">0</span></h3>
+          <p style="color: var(--text-muted); font-size: 13px;">Todos os avulsos que confirmaram (atuais + histórico)</p>
+        </div>
+        
+        <div class="card">
+          <h3 class="card-title">Avulsos Confirmados <span class="contador-badge" id="totalAvulsos">0</span></h3>
+          <div style="margin-bottom: 12px;">
+            <label style="color: var(--text-muted); font-size: 13px; margin-right: 12px;">
+              <input type="checkbox" id="filtrarPagos" style="margin-right: 4px;"> Mostrar apenas pagos
+            </label>
           </div>
-          <div class="form-row">
+          <ul class="lista-confirmados" id="listaAvulsos"></ul>
+        </div>
+        
+        <div class="card">
+          <h3 class="card-title">Avulsos em Reserva <span class="contador-badge" id="totalReservasAvulsos">0</span></h3>
+          <ul class="lista-confirmados" id="listaReservasAvulsos"></ul>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Histórico de Avulsos <span class="contador-badge" id="totalHistoricoAvulsos">0</span></h3>
+          <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 12px;">Avulsos de jogos anteriores (para controle de pagamento)</p>
+          <ul class="lista-confirmados" id="listaHistoricoAvulsos"></ul>
+        </div>
+      </section>
+      
+      <!-- Página Confirmados -->
+      <section id="page-confirmados" class="page active">
+        <div class="page-header">
+          <h1 class="page-title">Lista de Presença</h1>
+          <p class="page-subtitle">Confirme sua presença para o vôlei!</p>
+        </div>
+        <div class="card">
+          <h3 class="card-title">Nova Confirmação</h3>
+          <form id="formConfirma">
             <div class="form-group">
-              <label>Gênero</label>
+              <label class="form-label">Nome</label>
+              <input type="text" id="nome" placeholder="Digite seu nome" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Gênero</label>
               <select id="genero" required>
                 <option value="">Selecione</option>
-                <option value="masculino">♂ Masculino</option>
-                <option value="feminino">♀ Feminino</option>
+                <option value="masculino">Masculino</option>
+                <option value="feminino">Feminino</option>
               </select>
             </div>
             <div class="form-group">
-              <label>Tipo</label>
+              <label class="form-label">Tipo</label>
               <select id="tipo" required>
                 <option value="">Selecione</option>
                 <option value="mensalista">Mensalista</option>
-                <option value="avulso">💰 Avulso</option>
+                <option value="avulso">Avulso</option>
               </select>
             </div>
+            <button class="btn btn-primary btn-block" type="submit">Confirmar Presença</button>
+          </form>
+        </div>
+        <div id="mensagem" class="mensagem"></div>
+        <div id="msgRegrasConfirmacao" class="mensagem aviso" style="display: none;"></div>
+        
+        <!-- Formulário Admin Only para Confirmar sem Restrição de Dias -->
+        <div class="card" id="cardFormConfirmaAdmin" style="display: none;">
+          <h3 class="card-title">➕ Adicionar Confirmação (Admin)</h3>
+          <form id="formConfirmaAdmin">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div class="form-group">
+                <label class="form-label">Nome</label>
+                <input type="text" id="nomeAdmin" placeholder="Digite o nome" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Tipo</label>
+                <select id="tipoAdmin" required>
+                  <option value="">Selecione</option>
+                  <option value="mensalista">Mensalista</option>
+                  <option value="avulso">Avulso</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Gênero</label>
+                <select id="generoAdmin" required>
+                  <option value="">Selecione</option>
+                  <option value="masculino">Masculino ♂</option>
+                  <option value="feminino">Feminino ♀</option>
+                </select>
+              </div>
+              <div class="form-group" style="align-self: flex-end;">
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Confirmar</button>
+              </div>
+            </div>
+          </form>
+        </div>
+        
+        <div class="card">
+          <h3 class="card-title">Confirmados <span class="contador-badge" id="contadorConfirmados">0</span></h3>
+          <button class="btn btn-danger" id="limparConfirmados" style="margin-bottom: 16px;">Limpar Lista</button>
+          <ul class="lista-confirmados" id="listaConfirmados"></ul>
+        </div>
+        <div class="card" id="cardReservas" style="display: none;">
+          <div id="listaReservas"></div>
+        </div>
+      </section>
+      
+      <!-- Página Sorteio -->
+      <section id="page-sorteio" class="page">
+        <div class="page-header">
+          <h1 class="page-title">Sorteio de Times</h1>
+          <p class="page-subtitle">Distribua os jogadores em times equilibrados</p>
+        </div>
+        <div class="card">
+          <h3 class="card-title">Realizar Sorteio</h3>
+          <p style="color: var(--text-muted); margin-bottom: 16px; font-size: 14px;">
+            O sorteio distribui automaticamente os jogadores em 4 times, equilibrando homens e mulheres.
+          </p>
+          <div style="display: flex; gap: 12px;">
+            <button class="btn btn-primary" style="flex:1;" id="sortearTimes">Sortear Times</button>
+            <button class="btn btn-danger" id="limparSorteio" style="display:none;">Limpar</button>
           </div>
-          <div class="button-group">
-            <button class="btn btn-primary" type="submit">Confirmar Presença</button>
-            <button class="btn btn-secondary" id="limparConfirmados" type="button">Limpar</button>
-          </div>
-        </form>
-        <div class="mensagem" id="mensagem"></div>
-        <div class="mensagem aviso" id="msgRegrasConfirmacao" style="display: none;"></div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">
-          <span>👥</span>
-          Confirmados <span class="contador-badge" id="totalConfirmados">0/24</span>
         </div>
-        <ul class="lista-confirmados" id="listaConfirmados"></ul>
-      </div>
-
-      <div class="card" id="cardReservas" style="display: none;">
-        <div class="card-title">
-          <span>⏳</span>
-          Reserva
-        </div>
-        <ul class="lista-confirmados" id="listaReservas"></ul>
-      </div>
-
-      <div class="card">
-        <div class="card-title">
-          <span>🎲</span>
-          Sorteio de Times
-        </div>
-        <button class="btn btn-primary" id="sortearTimes" type="button">Sortear Times</button>
         <div id="resultadoSorteio"></div>
-      </div>
-    </div>
+      </section>
+      
+      <!-- Página Estatísticas -->
+      <section id="page-estatisticas" class="page">
+        <div class="page-header">
+          <h1 class="page-title">Estatísticas</h1>
+          <p class="page-subtitle">Acompanhe as presenças ao longo do tempo</p>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="statTotal">0</div>
+            <div class="stat-label">Total de Presenças</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statJogadores">0</div>
+            <div class="stat-label">Jogadores Únicos</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statMensalistas">0</div>
+            <div class="stat-label">Mensalistas</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statAvulsos">0</div>
+            <div class="stat-label">Avulsos</div>
+          </div>
+        </div>
+        <div class="card">
+          <h3 class="card-title">Ranking de Presenças</h3>
+          <ul class="ranking-list" id="rankingList"></ul>
+          <div class="empty-state" id="emptyRanking" style="display:none;">
+            Nenhum dado de estatísticas disponível.
+          </div>
+        </div>
+      </section>
+    </main>
   </div>
 
-  <!-- Three.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  
-  <!-- Three.js Effects -->
-  <script>
-    // Scene Setup
-    const canvas = document.getElementById('canvas-container');
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setClearColor(0x000000, 0);
-    renderer.shadowMap.enabled = true;
-    document.getElementById('canvas-container').appendChild(renderer.domElement);
-
-    camera.position.z = 100;
-
-    // Lighting
-    const light1 = new THREE.PointLight(0x34d399, 1, 200);
-    light1.position.set(50, 50, 50);
-    scene.add(light1);
-
-    const light2 = new THREE.PointLight(0x7dd3fc, 0.8, 200);
-    light2.position.set(-50, -50, 50);
-    scene.add(light2);
-
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
-    scene.add(ambientLight);
-
-    // Volleyball Ball
-    const volleyballGeometry = new THREE.IcosahedronGeometry(15, 4);
-    const volleyballMaterial = new THREE.MeshPhongMaterial({
-      color: 0xffffff,
-      shininess: 100,
-      wireframe: false
-    });
-    const volleyball = new THREE.Mesh(volleyballGeometry, volleyballMaterial);
-    volleyball.position.set(0, 0, 0);
-    scene.add(volleyball);
-
-    // Add wireframe to volleyball
-    const wireframeGeometry = new THREE.IcosahedronGeometry(15, 4);
-    const wireframeMaterial = new THREE.MeshBasicMaterial({
-      color: 0x34d399,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.3
-    });
-    const wireframe = new THREE.Mesh(wireframeGeometry, wireframeMaterial);
-    wireframe.position.copy(volleyball.position);
-    scene.add(wireframe);
-
-    // Particles
-    const particlesGeometry = new THREE.BufferGeometry();
-    const particlesCount = 200;
-    const posArray = new Float32Array(particlesCount * 3);
-
-    for (let i = 0; i < particlesCount * 3; i += 3) {
-      posArray[i] = (Math.random() - 0.5) * 400;
-      posArray[i + 1] = (Math.random() - 0.5) * 400;
-      posArray[i + 2] = (Math.random() - 0.5) * 200;
-    }
-
-    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-
-    const particlesMaterial = new THREE.PointsMaterial({
-      size: 2,
-      color: 0x34d399,
-      sizeAttenuation: true,
-      transparent: true,
-      opacity: 0.6
-    });
-
-    const particles = new THREE.Points(particlesGeometry, particlesMaterial);
-    scene.add(particles);
-
-    // Rotating Torus
-    const torusGeometry = new THREE.TorusGeometry(80, 3, 16, 100);
-    const torusMaterial = new THREE.MeshBasicMaterial({
-      color: 0x7dd3fc,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.2
-    });
-    const torus = new THREE.Mesh(torusGeometry, torusMaterial);
-    scene.add(torus);
-
-    // Mouse interaction
-    let mouseX = 0;
-    let mouseY = 0;
-
-    document.addEventListener('mousemove', (e) => {
-      mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-      mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
-    });
-
-    // Animation loop
-    function animate() {
-      requestAnimationFrame(animate);
-
-      // Rotate volleyball
-      volleyball.rotation.x += 0.003;
-      volleyball.rotation.y += 0.005;
-      wireframe.rotation.x += 0.003;
-      wireframe.rotation.y += 0.005;
-
-      // Rotate torus
-      torus.rotation.x += 0.001;
-      torus.rotation.z += 0.002;
-
-      // Rotate particles
-      particles.rotation.x += 0.0001;
-      particles.rotation.y += 0.0002;
-
-      // Mouse interaction
-      camera.position.x += (mouseX * 50 - camera.position.x) * 0.02;
-      camera.position.y += (mouseY * 50 - camera.position.y) * 0.02;
-      camera.lookAt(0, 0, 0);
-
-      renderer.render(scene, camera);
-    }
-
-    animate();
-
-    // Responsive
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-  </script>
+  <!-- Bottom Nav Mobile -->
+  <nav class="bottom-nav">
+    <div class="bottom-nav-items">
+      <button class="bottom-nav-item active" data-page="confirmados">
+        <span class="icon">📋</span>
+        <span>Confirmados</span>
+      </button>
+      <button class="bottom-nav-item" data-page="sorteio">
+        <span class="icon">🎲</span>
+        <span>Sorteio</span>
+      </button>
+      <button class="bottom-nav-item" data-page="estatisticas">
+        <span class="icon">📊</span>
+        <span>Estatísticas</span>
+      </button>
+      <button class="bottom-nav-item" id="btnAvulsosMobile" data-page="avulsos" style="display:none;">
+        <span class="icon">💰</span>
+        <span>Avulsos</span>
+      </button>
+      <button class="bottom-nav-item" id="btnAdminMobile" onclick="abrirLogin()">
+        <span class="icon">🔐</span>
+        <span>Admin</span>
+      </button>
+      <button class="bottom-nav-item admin-logged" id="btnLogoutMobile" onclick="fazerLogout()" style="display:none;">
+        <span class="icon">🚪</span>
+        <span>Sair</span>
+      </button>
+    </div>
+  </nav>
 
   <!-- Modal Login Admin -->
   <div class="login-modal" id="loginModal">
     <div class="login-box">
-      <h3>🔐 Login Admin</h3>
+      <h3>Login Admin</h3>
       <form onsubmit="event.preventDefault(); fazerLogin();">
         <div class="login-erro" id="loginErro"></div>
         <input type="text" id="loginUsuario" placeholder="Usuário" required>
         <input type="password" id="loginSenha" placeholder="Senha" autocomplete="current-password" required>
-        <button type="submit" class="btn btn-primary" style="margin-bottom: 8px;">Entrar</button>
-        <button type="button" class="btn btn-secondary" onclick="fecharLogin()">Cancelar</button>
+        <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+        <button type="button" class="btn btn-secondary btn-block" onclick="fecharLogin()" style="margin-top:8px;">Cancelar</button>
       </form>
     </div>
   </div>
 
-  <!-- Admin Functions -->
   <script>
     // VARIÁVEIS GLOBAIS
     let adminToken = localStorage.getItem('adminToken') || null;
     let isAdmin = !!adminToken;
 
+    // FUNÇÕES CRÍTICAS - DEVEM SER DEFINIDAS PRIMEIRO
     function mostrarMensagem(texto, tipo = '') {
       const el = document.getElementById('mensagem');
       el.textContent = texto;
@@ -907,6 +455,7 @@
           isAdmin = true;
           fecharLogin();
           atualizarUIAdmin();
+          carregarEstatisticas();
           mostrarMensagem('Login realizado com sucesso!', 'sucesso');
         } else {
           document.getElementById('loginErro').textContent = data.erro || 'Credenciais inválidas';
@@ -932,39 +481,987 @@
       isAdmin = false;
       localStorage.removeItem('adminToken');
       atualizarUIAdmin();
+      carregarEstatisticas();
       mostrarMensagem('Logout realizado', 'sucesso');
     }
     
     function atualizarUIAdmin() {
-      const btnAdmin = document.getElementById('btnAdmin');
-      if (btnAdmin) {
-        if (isAdmin) {
-          btnAdmin.innerHTML = '🚪 Sair';
-          btnAdmin.onclick = fazerLogout;
-          btnAdmin.style.color = 'var(--danger)';
-          btnAdmin.style.borderColor = 'rgba(239, 68, 68, 0.3)';
-          btnAdmin.style.background = 'rgba(239, 68, 68, 0.15)';
+      document.getElementById('btnAdminSidebar').style.display = isAdmin ? 'none' : 'flex';
+      document.getElementById('btnLogoutSidebar').style.display = isAdmin ? 'flex' : 'none';
+      document.getElementById('btnAdminMobile').style.display = isAdmin ? 'none' : 'flex';
+      document.getElementById('btnLogoutMobile').style.display = isAdmin ? 'flex' : 'none';
+      document.getElementById('btnAvulsosSidebar').style.display = isAdmin ? 'flex' : 'none';
+      document.getElementById('btnAvulsosMobile').style.display = isAdmin ? 'flex' : 'none';
+      document.getElementById('cardFormConfirmaAdmin').style.display = isAdmin ? 'block' : 'none';
+      if (isAdmin && window.ultimoSorteio) renderizarTimes();
+    }
+
+    // NAVEGAÇÃO
+    const navItems = document.querySelectorAll('[data-page]');
+    const pages = document.querySelectorAll('.page');
+    function navigateTo(pageId) {
+      console.log(`📄 Navegando para página: ${pageId}`);
+      pages.forEach(p => p.classList.remove('active'));
+      
+      const pageElement = document.getElementById(`page-${pageId}`);
+      console.log(`  └─ Elemento page-${pageId} encontrado?`, !!pageElement);
+      
+      if (pageElement) {
+        pageElement.classList.add('active');
+        console.log(`  └─ Página ativada. Display:`, window.getComputedStyle(pageElement).display);
+      }
+      
+      navItems.forEach(item => item.classList.toggle('active', item.dataset.page === pageId));
+      
+      if (pageId === 'estatisticas') carregarEstatisticas();
+      if (pageId === 'avulsos') {
+        console.log('  └─ Chamando atualizarListaAvulsos...');
+        atualizarListaAvulsos();
+      }
+    }
+    navItems.forEach(item => item.addEventListener('click', () => navigateTo(item.dataset.page)));
+    // ATUALIZAR LISTA (CAP 24)
+    async function atualizarLista() {
+      try {
+        const res = await fetch('/confirmados');
+        const data = await res.json();
+        let confirmed = Array.isArray(data) ? data.slice(0, 24) : (data.confirmed || []).slice(0, 24);
+        let waitlist = Array.isArray(data) ? data.slice(24) : (data.waitlist || []);
+        
+        const contador = document.getElementById('contadorConfirmados');
+        if (contador) contador.textContent = confirmed.length;
+        
+        const ul = document.getElementById('listaConfirmados');
+        if (ul) {
+          ul.innerHTML = '';
+          confirmed.forEach((c, i) => {
+            const li = document.createElement('li');
+            li.className = `lista-item ${c.tipo === 'avulso' ? 'avulso' : ''}`;
+            const info = document.createElement('div');
+            info.className = 'info';
+            const nome = document.createElement('span');
+            nome.className = 'nome';
+            nome.textContent = `${i + 1}. ${c.nome}`;
+            info.appendChild(nome);
+            const tipoBadge = document.createElement('span');
+            tipoBadge.className = `badge badge-${c.tipo}`;
+            tipoBadge.textContent = c.tipo === 'mensalista' ? 'M' : 'A';
+            tipoBadge.title = c.tipo;
+            info.appendChild(tipoBadge);
+            if (c.genero) {
+              const generoBadge = document.createElement('span');
+              generoBadge.className = `badge badge-${c.genero}`;
+              generoBadge.textContent = c.genero === 'masculino' ? '♂' : '♀';
+              generoBadge.title = c.genero;
+              info.appendChild(generoBadge);
+            }
+            li.appendChild(info);
+            const btn = document.createElement('button');
+            btn.className = 'btn-remove';
+            btn.textContent = '✕';
+            btn.title = `Remover ${c.nome}`;
+            btn.addEventListener('click', () => removerConfirmado(c.id));
+            li.appendChild(btn);
+            ul.appendChild(li);
+          });
+        }
+        
+        // RENDERIZAR RESERVAS
+        const cardReservas = document.getElementById('cardReservas');
+        const divReservas = document.getElementById('listaReservas');
+        if (cardReservas && divReservas) {
+          if (waitlist.length > 0) {
+            let html = '<h3 class="card-title">📋 Reservas <span class="contador-badge">' + waitlist.length + '</span></h3><ul class="lista-confirmados" style="margin: 12px 0;">';
+            waitlist.forEach((w, idx) => {
+              html += `<li class="lista-item ${w.tipo === 'avulso' ? 'avulso' : ''}">
+                <div class="info">
+                  <span class="nome">${idx + 1}. ${w.nome}</span>
+                  <span class="badge badge-${w.tipo}">${w.tipo === 'mensalista' ? 'M' : 'A'}</span>
+                  ${w.genero ? `<span class="badge badge-${w.genero}">${w.genero === 'masculino' ? '♂' : '♀'}</span>` : ''}
+                </div>
+                <button class="btn-remove" onclick="removerReserva(${w.id})" title="Remover ${w.nome}">✕</button>
+              </li>`;
+            });
+            html += '</ul>';
+            divReservas.innerHTML = html;
+            cardReservas.style.display = 'block';
+          } else {
+            divReservas.innerHTML = '';
+            cardReservas.style.display = 'none';
+          }
+        }
+      } catch (err) {
+        console.error('Erro lista:', err);
+      }
+    }
+    
+    // REMOVER CONFIRMADO
+    async function removerConfirmado(id) {
+      if (!confirm('Remover esta pessoa?')) return;
+      try {
+        const res = await fetch(`/confirmados/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.sucesso) {
+          mostrarMensagem('Removido com sucesso!', 'sucesso');
+          atualizarLista();
         } else {
-          btnAdmin.innerHTML = '🔐 Admin';
-          btnAdmin.onclick = abrirLogin;
-          btnAdmin.style.color = 'var(--accent-blue)';
-          btnAdmin.style.borderColor = 'rgba(125, 211, 252, 0.3)';
-          btnAdmin.style.background = 'rgba(125, 211, 252, 0.15)';
+          mostrarMensagem(data.erro || 'Erro ao remover.', 'erro');
+        }
+      } catch (err) {
+        mostrarMensagem('Erro de conexão.', 'erro');
+      }
+    }
+    
+    // REMOVER DE RESERVAS
+    async function removerReserva(id) {
+      if (!confirm('Remover esta pessoa da lista de reservas?')) return;
+      try {
+        const res = await fetch(`/reservas/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.sucesso) {
+          mostrarMensagem('Removido da lista de reservas!', 'sucesso');
+          atualizarLista();
+        } else {
+          mostrarMensagem(data.erro || 'Erro ao remover.', 'erro');
+        }
+      } catch (err) {
+        mostrarMensagem('Erro de conexão.', 'erro');
+      }
+    }
+    
+    // CARREGAR REGRAS DE CONFIRMAÇÃO
+    let regraConfirmacao = {};
+    async function carregarRegrasConfirmacao() {
+      try {
+        const res = await fetch('/regras-confirmacao');
+        const data = await res.json();
+        regraConfirmacao = data;
+        
+        // Atualizar a mensagem de regras na página
+        const msgRegras = document.getElementById('msgRegrasConfirmacao');
+        if (msgRegras) {
+          if (data.bloqueado) {
+            msgRegras.innerHTML = `<strong>⛔ Sistema bloqueado para manutenção no domingo!</strong>`;
+            msgRegras.style.display = 'block';
+          } else if (data.tipoAtivo) {
+            msgRegras.innerHTML = `<strong>📅 ${data.diaAtual}: Dia de confirmação para <span style="color: #34d399;">${data.tipoAtivo.toUpperCase()}S</span></strong>`;
+            msgRegras.style.display = 'block';
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao carregar regras:', err);
+      }
+    }
+    
+    // FORM CONFIRMAÇÃO
+    document.getElementById('formConfirma').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const nome = document.getElementById('nome').value.trim();
+      const tipo = document.getElementById('tipo').value;
+      const genero = document.getElementById('genero').value;
+      if (!nome || !tipo || !genero) return;
+      
+      // Verificar se este tipo pode confirmar hoje
+      if (regraConfirmacao.bloqueado) {
+        mostrarMensagem('❌ Sistema bloqueado no domingo. Tente amanhã!', 'erro');
+        return;
+      }
+      
+      if (regraConfirmacao.tipoAtivo && tipo !== regraConfirmacao.tipoAtivo) {
+        mostrarMensagem(`❌ Hoje ${regraConfirmacao.diaAtual} é dia de confirmação apenas para ${regraConfirmacao.tipoAtivo === 'mensalista' ? 'MENSALISTAS' : 'AVULSOS'}!`, 'erro');
+        return;
+      }
+      
+      try {
+        const res = await fetch('/confirmar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome, tipo, genero })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          if (data.reserva) {
+            mostrarMensagem(`${nome}, você foi adicionado à lista de RESERVAS! Os times estão completos.`, 'aviso');
+          } else {
+            mostrarMensagem('Presença confirmada!', 'sucesso');
+          }
+          this.reset();
+          atualizarLista();
+        } else {
+          throw new Error(data.erro || 'Erro ao confirmar.');
+        }
+      } catch (err) {
+        mostrarMensagem(err.message || 'Erro ao confirmar.', 'erro');
+      }
+    });
+    
+    // SORTEIO CORRIGIDO (24 max, 4x6 perfeitos, sem vaga extra se 24)
+function sortearTimes(confirmados) {
+  // Criar cópia independente dos dados
+  confirmados = JSON.parse(JSON.stringify(confirmados));
+  
+  // Garantir que todos têm gênero definido
+  confirmados.forEach(c => {
+    if (!c.genero) c.genero = 'masculino';
+  });
+  
+  // Separar por gênero
+  const homens = confirmados.filter(c => c.genero === 'masculino');
+  const mulheres = confirmados.filter(c => c.genero === 'feminino');
+  
+  // Função de embaralhamento (Fisher-Yates)
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+  
+  // EMBARALHAR A CADA SORTEIO
+  shuffle(homens);
+  shuffle(mulheres);
+  
+  // DEFINIR NÚMERO DE TIMES (3 ou 4)
+  const totalPessoas = confirmados.length;
+  const numTimes = totalPessoas <= 18 ? 3 : 4;
+  
+  // CALCULAR QUANTAS PESSOAS CADA TIME DEVE TER
+  const pessoasPorTime = Math.ceil(totalPessoas / numTimes);
+  
+  // Criar times vazios
+  const times = [];
+  for (let i = 0; i < numTimes; i++) {
+    times.push([]);
+  }
+  
+  // DISTRIBUIR MULHERES EQUILIBRADAMENTE
+  let timeIndex = 0;
+  for (let i = 0; i < mulheres.length; i++) {
+    // Adiciona mulher ao time atual
+    times[timeIndex].push(mulheres[i]);
+    
+    // Vai para o próximo time
+    timeIndex = (timeIndex + 1) % numTimes;
+  }
+  
+  // DISTRIBUIR HOMENS EQUILIBRADAMENTE
+  timeIndex = 0;
+  for (let i = 0; i < homens.length; i++) {
+    // Procura o time com menos pessoas (para equilibrar)
+    let menorTime = 0;
+    let menorTamanho = times[0].length;
+    
+    for (let t = 1; t < numTimes; t++) {
+      if (times[t].length < menorTamanho) {
+        menorTamanho = times[t].length;
+        menorTime = t;
+      }
+    }
+    
+    // Adiciona homem ao time com menos pessoas
+    times[menorTime].push(homens[i]);
+  }
+  
+  // PREENCHER COM VAGAS LIVRES ATÉ TODOS TEREM O MESMO TAMANHO
+  const maxSize = Math.max(...times.map(t => t.length));
+  for (let i = 0; i < numTimes; i++) {
+    while (times[i].length < maxSize) {
+      times[i].push({nome: 'Vaga Livre', genero: '', tipo: ''});
+    }
+  }
+  
+  return times;
+}
+    
+    // RENDER TIMES COM DRAG AND DROP PARA ADMIN
+function renderizarTimes() {
+  if (!window.ultimoSorteio) return;
+  
+  const times = window.ultimoSorteio;
+  const numTimes = times.length;  // Pode ser 3 ou 4
+  const canDrag = isAdmin;
+  
+  let html = '<div class="card">';
+  html += '<h3 class="card-title">Times Sorteados</h3>';
+  
+  if (canDrag) {
+    html += '<div class="admin-hint">💡 Arraste os jogadores para trocar de time</div>';
+  }
+  
+  html += '<div class="times-grid">';
+  
+  // LOOP DINÂMICO (3 ou 4 times)
+  for (let i = 0; i < numTimes; i++) {
+    html += `<div class="time-card" data-time="${i}">`;
+    html += `<h4>Time ${i + 1}</h4>`;
+    html += `<ul ${canDrag ? 'class="drag-target"' : ''} data-time="${i}">`;
+    
+    times[i].forEach((p, j) => {
+      const badge = p.genero ? `<span class="badge badge-${p.genero}">${p.genero === 'masculino' ? '♂' : '♀'}</span>` : '';
+      
+      if (canDrag && p.nome !== 'Vaga Livre') {
+        html += `<li class="draggable" draggable="true" data-time="${i}" data-index="${j}">${p.nome} ${badge}</li>`;
+      } else {
+        html += `<li>${p.nome} ${badge}</li>`;
+      }
+    });
+    
+    html += '</ul>';
+    html += '</div>';
+  }
+  
+  html += '</div>';
+  html += '<button class="btn btn-whatsapp btn-block" style="margin-top:16px" onclick="compartilharWhatsApp()">📱 Compartilhar no WhatsApp</button>';
+  html += '</div>';
+  
+  document.getElementById('resultadoSorteio').innerHTML = html;
+  
+  if (canDrag) {
+    initDragAndDrop();
+  }
+}
+
+    
+    // DRAG AND DROP PARA ADMIN
+    function initDragAndDrop() {
+      let draggedItem = null;
+      let draggedFromTime = null;
+      let draggedIndex = null;
+      
+      document.querySelectorAll('.draggable').forEach(item => {
+        item.addEventListener('dragstart', function(e) {
+          draggedItem = this;
+          draggedFromTime = parseInt(this.dataset.time);
+          draggedIndex = parseInt(this.dataset.index);
+          this.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+        });
+        
+        item.addEventListener('dragend', function() {
+          this.classList.remove('dragging');
+          document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+        });
+        
+        item.addEventListener('dragover', function(e) {
+          e.preventDefault();
+          if (this !== draggedItem) {
+            this.classList.add('drag-over');
+          }
+        });
+        
+        item.addEventListener('dragleave', function() {
+          this.classList.remove('drag-over');
+        });
+        
+        item.addEventListener('drop', function(e) {
+          e.preventDefault();
+          if (this === draggedItem) return;
+          
+          const targetTime = parseInt(this.dataset.time);
+          const targetIndex = parseInt(this.dataset.index);
+          
+          // Trocar jogadores
+          const temp = window.ultimoSorteio[draggedFromTime][draggedIndex];
+          window.ultimoSorteio[draggedFromTime][draggedIndex] = window.ultimoSorteio[targetTime][targetIndex];
+          window.ultimoSorteio[targetTime][targetIndex] = temp;
+          
+          renderizarTimes();
+        });
+      });
+    }
+    
+    // BOTÃO SORTEAR
+    document.getElementById('sortearTimes').addEventListener('click', async function(e) {
+      e.preventDefault();
+      try {
+        const res = await fetch('/confirmados');
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : (data.confirmed || []);
+        const times = sortearTimes(list);
+        window.ultimoSorteio = times;
+        document.getElementById('limparSorteio').style.display = 'inline-block';
+        renderizarTimes();
+      } catch (err) {
+        console.error('Erro sorteio:', err);
+      }
+    });
+    
+    // LIMPAR SORTEIO
+    document.getElementById('limparSorteio').addEventListener('click', function() {
+      document.getElementById('resultadoSorteio').innerHTML = '';
+      this.style.display = 'none';
+      window.ultimoSorteio = null;
+    });
+    
+    // WHATSAPP
+function compartilharWhatsApp() {
+  if (!window.ultimoSorteio) return;
+  
+  const numTimes = window.ultimoSorteio.length;
+  let mensagem = '🏐 *SORTEIO DOS TIMES - VÔLEI SEXTA*\n\n';
+  
+  for (let i = 0; i < numTimes; i++) {
+    mensagem += `*Time ${i + 1}*\n`;
+    window.ultimoSorteio[i].forEach(p => {
+      if (p.nome !== 'Vaga Livre') {
+        mensagem += `${p.nome}${p.genero ? ' ' + (p.genero === 'masculino' ? '♂' : '♀') : ''}\n`;
+      }
+    });
+    mensagem += '\n';
+  }
+  
+  window.open(`https://wa.me/5511986439388?text=${encodeURIComponent(mensagem)}`, '_blank');
+}
+    
+    // LIMPAR LISTA (agora finaliza dia automaticamente)
+    document.getElementById('limparConfirmados').addEventListener('click', async function(e) {
+      e.preventDefault();
+      if (confirm('Limpar todos os confirmados?')) {
+        try {
+          // 1. PRIMEIRO: salvar avulsos no histórico
+          await finalizarDia();
+          
+          // 2. DEPOIS: limpar confirmados
+          const res = await fetch('/confirmados', { method: 'DELETE' });
+          const data = await res.json();
+          if (data.sucesso) {
+            mostrarMensagem('Lista limpa!', 'sucesso');
+            atualizarLista();
+          }
+        } catch (err) {
+          mostrarMensagem('Erro ao limpar.', 'erro');
+        }
+      }
+    });
+
+    // FINALIZAR DIA
+    const btnFinalizarDia = document.getElementById('btnFinalizarDia');
+    if (btnFinalizarDia) {
+      btnFinalizarDia.addEventListener('click', finalizarDia);
+    }
+
+    
+    // REMOVER PESSOA DAS ESTATÍSTICAS (ADMIN)
+    async function removerDasEstatisticas(nome) {
+      if (!confirm(`Remover "${nome}" das estatísticas permanentemente?\n\nIsso apagará TODAS as confirmações dessa pessoa.`)) return;
+      
+      try {
+        const headers = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
+        };
+        
+        const res = await fetch(`/estatisticas/pessoa/${encodeURIComponent(nome)}`, {
+          method: 'DELETE',
+          headers
+        });
+        
+        const data = await res.json();
+        
+        if (data.sucesso || res.ok) {
+          mostrarMensagem('Pessoa removida das estatísticas!', 'sucesso');
+          carregarEstatisticas();
+        } else {
+          throw new Error(data.erro || 'Erro ao remover pessoa.');
+        }
+      } catch (err) {
+        console.error('Erro ao remover:', err);
+        mostrarMensagem(err.message || 'Erro ao remover pessoa.', 'erro');
+      }
+    }
+    
+    // ESTATÍSTICAS COM BOTÃO REMOVER ADMIN
+    async function carregarEstatisticas() {
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (adminToken) {
+          headers['Authorization'] = `Bearer ${adminToken}`;
+        }
+        
+        const res = await fetch('/estatisticas', { headers });
+        if (!res.ok) throw new Error(`Erro HTTP: ${res.status}`);
+        
+        const data = await res.json();
+        const ranking = data.ranking || [];
+        const resumo = data.resumo || {};
+        
+        if (ranking.length === 0) {
+          document.getElementById('rankingList').style.display = 'none';
+          document.getElementById('emptyRanking').style.display = 'block';
+          document.getElementById('statTotal').textContent = '0';
+          document.getElementById('statJogadores').textContent = '0';
+          document.getElementById('statMensalistas').textContent = '0';
+          document.getElementById('statAvulsos').textContent = '0';
+          return;
+        }
+        
+        document.getElementById('rankingList').style.display = 'block';
+        document.getElementById('emptyRanking').style.display = 'none';
+        
+        // Usar dados do resumo do backend
+        document.getElementById('statTotal').textContent = resumo.totalConfirmacoes || 0;
+        document.getElementById('statJogadores').textContent = resumo.pessoasUnicas || 0;
+        
+        // Contar mensalistas e avulsos do ranking
+        const mensalistas = ranking.filter(r => r.tipo === 'mensalista').length;
+        const avulsos = ranking.filter(r => r.tipo === 'avulso').length;
+        document.getElementById('statMensalistas').textContent = mensalistas;
+        document.getElementById('statAvulsos').textContent = avulsos;
+        
+        // Renderizar ranking COM BOTÃO EXCLUIR ADMIN
+        const ul = document.getElementById('rankingList');
+        ul.innerHTML = '';
+        ranking.forEach((r, i) => {
+          const li = document.createElement('li');
+          li.className = 'ranking-item';
+          const presencas = parseInt(r.total_confirmacoes || 0, 10);
+          
+          const leftDiv = document.createElement('div');
+          leftDiv.className = 'ranking-left';
+          leftDiv.innerHTML = `<span class="pos ${i < 3 ? 'top-3' : ''}">${i + 1}</span><span>${r.nome}</span>`;
+          
+          const rightDiv = document.createElement('div');
+          rightDiv.className = 'ranking-right';
+          
+          const countSpan = document.createElement('span');
+          countSpan.className = 'count';
+          countSpan.textContent = `${presencas} presenças`;
+          rightDiv.appendChild(countSpan);
+          
+          // Botão X somente se admin
+          if (isAdmin) {
+            const btnRemove = document.createElement('button');
+            btnRemove.className = 'btn-remove';
+            btnRemove.textContent = '✕';
+            btnRemove.title = `Remover ${r.nome} das estatísticas`;
+            btnRemove.addEventListener('click', () => removerDasEstatisticas(r.nome));
+            rightDiv.appendChild(btnRemove);
+          }
+          
+          li.appendChild(leftDiv);
+          li.appendChild(rightDiv);
+          ul.appendChild(li);
+        });
+      } catch (err) {
+        console.error('Erro ao carregar estatísticas:', err);
+        document.getElementById('rankingList').style.display = 'none';
+        document.getElementById('emptyRanking').style.display = 'block';
+        document.getElementById('emptyRanking').textContent = 'Erro ao carregar estatísticas.';
+      }
+    }
+    
+    // FUNÇÃO PARA IR PARA UMA PÁGINA
+    function irPara(pagina) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      const pageEl = document.getElementById('page-' + pagina);
+      if (pageEl) {
+        pageEl.classList.add('active');
+        if (pagina === 'avulsos') {
+          atualizarListaAvulsos();
         }
       }
     }
+    
+    // CARREGAR LISTA DE AVULSOS
+    async function atualizarListaAvulsos() {
+      try {
+        console.log('📞 Chamando /avulsos-confirmados...');
+        const res = await fetch('/avulsos-confirmados');
+        const data = await res.json();
+        
+        console.log('📥 Resposta recebida:', data);
+        
+        const confirmados = data.confirmados || [];
+        const reservas = data.reservas || [];
+        const historico = data.historico || [];
+        
+        console.log(`✅ Avulsos confirmados: ${confirmados.length}, Reservas: ${reservas.length}, Histórico: ${historico.length}`);
+        
+        // Atualizar contadores
+        const totalGeral = confirmados.length + reservas.length + historico.length;
+        document.getElementById('totalAvulsos').textContent = confirmados.length;
+        document.getElementById('totalReservasAvulsos').textContent = reservas.length;
+        document.getElementById('totalHistoricoAvulsos').textContent = historico.length;
+        document.getElementById('totalAvulsosGeral').textContent = totalGeral;
+        
+        // Renderizar confirmados
+        const ulConfirmados = document.getElementById('listaAvulsos');
+        console.log('Elemento ulConfirmados encontrado?', !!ulConfirmados);
+        
+        if (!ulConfirmados) {
+          console.error('❌ Elemento #listaAvulsos não encontrado no DOM!');
+          return;
+        }
+        
+        ulConfirmados.innerHTML = '';
+        console.log(`🔄 Renderizando ${confirmados.length} avulsos confirmados...`);
+        
+        confirmados.forEach((a, i) => {
+          console.log(`  └─ Renderizando avulso ${i + 1}:`, a.nome);
+          const li = document.createElement('li');
+          li.className = 'lista-item';
+          
+          const info = document.createElement('div');
+          info.className = 'info';
+          
+          const nome = document.createElement('span');
+          nome.className = 'nome';
+          nome.textContent = `${i + 1}. ${a.nome}`;
+          
+          const data = document.createElement('span');
+          data.className = 'badge badge-avulso';
+          data.style.marginLeft = '8px';
+          const dataFormatada = new Date(a.data_confirmacao).toLocaleDateString('pt-BR');
+          data.textContent = dataFormatada;
+          data.title = 'Data de confirmação';
+          
+          const statusPago = a.pago ? '✅ PAGO' : '❌ NÃO PAGO';
+          const statusBadge = document.createElement('span');
+          statusBadge.className = `badge ${a.pago ? 'badge-avulso' : ''}`;
+          statusBadge.style.marginLeft = '8px';
+          statusBadge.style.backgroundColor = a.pago ? 'rgba(52,211,153,0.2)' : 'rgba(239,68,68,0.2)';
+          statusBadge.style.color = a.pago ? '#34d399' : '#ef4444';
+          statusBadge.textContent = statusPago;
+          
+          info.appendChild(nome);
+          info.appendChild(data);
+          info.appendChild(statusBadge);
+          li.appendChild(info);
+          
+          const btn = document.createElement('button');
+          btn.className = 'btn btn-secondary';
+          btn.style.padding = '6px 10px';
+          btn.textContent = a.pago ? 'Marcar Não Pago' : 'Marcar Pago';
+          btn.addEventListener('click', () => marcarAvulsoComoPago(a.id, !a.pago));
+          
+          li.appendChild(btn);
+          ulConfirmados.appendChild(li);
+        });
+        
+        console.log(`✅ Renderização completa! ${confirmados.length} itens adicionados.`);
+        
+        if (confirmados.length === 0) {
+          const li = document.createElement('li');
+          li.style.textAlign = 'center';
+          li.style.color = 'var(--text-muted)';
+          li.textContent = 'Nenhum avulso confirmado';
+          ulConfirmados.appendChild(li);
+        }
+        
+        // Renderizar reservas
+        const ulReservas = document.getElementById('listaReservasAvulsos');
+        console.log('Elemento ulReservas encontrado?', !!ulReservas);
+        
+        if (ulReservas) {
+          ulReservas.innerHTML = '';
+          console.log(`🔄 Renderizando ${reservas.length} reservas de avulsos...`);
+          
+          reservas.forEach((a, i) => {
+            console.log(`  └─ Renderizando reserva ${i + 1}:`, a.nome);
+            const li = document.createElement('li');
+            li.className = 'lista-item';
+            
+            const info = document.createElement('div');
+            info.className = 'info';
+            
+            const nome = document.createElement('span');
+            nome.className = 'nome';
+            nome.textContent = `${i + 1}. ${a.nome} (RESERVA)`;
+            nome.style.color = '#94a3b8';
+            
+            const data = document.createElement('span');
+            data.className = 'badge badge-avulso';
+            data.style.marginLeft = '8px';
+            const dataFormatada = new Date(a.data_confirmacao).toLocaleDateString('pt-BR');
+            data.textContent = dataFormatada;
+            
+            info.appendChild(nome);
+            info.appendChild(data);
+            li.appendChild(info);
+            ulReservas.appendChild(li);
+          });
+          
+          console.log(`✅ Renderização de reservas completa! ${reservas.length} itens adicionados.`);
+          
+          if (reservas.length === 0) {
+            const li = document.createElement('li');
+            li.style.textAlign = 'center';
+            li.style.color = 'var(--text-muted)';
+            li.textContent = 'Nenhuma reserva de avulso';
+            ulReservas.appendChild(li);
+          }
+        } else {
+          console.error('❌ Elemento #listaReservasAvulsos não encontrado no DOM!');
+        }
 
-    // Inicializar UI admin ao carregar
-    window.addEventListener('DOMContentLoaded', () => {
-      atualizarUIAdmin();
-      // Chamar função do app.js para carregar regras
-      if (typeof carregarRegrasConfirmacao === 'function') {
-        carregarRegrasConfirmacao();
+        // Renderizar histórico
+        const ulHistorico = document.getElementById('listaHistoricoAvulsos');
+        console.log('Elemento ulHistorico encontrado?', !!ulHistorico);
+        
+        if (ulHistorico) {
+          ulHistorico.innerHTML = '';
+          console.log(`🔄 Renderizando ${historico.length} avulsos histórico...`);
+          
+          historico.forEach((a, i) => {
+            console.log(`  └─ Renderizando histórico ${i + 1}:`, a.nome);
+            const li = document.createElement('li');
+            li.className = 'lista-item';
+            
+            const info = document.createElement('div');
+            info.className = 'info';
+            
+            const nome = document.createElement('span');
+            nome.className = 'nome';
+            nome.textContent = `${i + 1}. ${a.nome}`;
+            nome.style.color = '#94a3b8';
+            
+            const data = document.createElement('span');
+            data.className = 'badge badge-avulso';
+            data.style.marginLeft = '8px';
+            const dataFormatada = new Date(a.data_confirmacao).toLocaleDateString('pt-BR');
+            data.textContent = dataFormatada;
+            
+            const statusPago = a.pago ? '✅ PAGO' : '❌ NÃO PAGO';
+            const statusBadge = document.createElement('span');
+            statusBadge.className = `badge`;
+            statusBadge.style.marginLeft = '8px';
+            statusBadge.style.backgroundColor = a.pago ? 'rgba(52,211,153,0.2)' : 'rgba(239,68,68,0.2)';
+            statusBadge.style.color = a.pago ? '#34d399' : '#ef4444';
+            statusBadge.textContent = statusPago;
+            
+            info.appendChild(nome);
+            info.appendChild(data);
+            info.appendChild(statusBadge);
+            li.appendChild(info);
+            
+            const btnContainer = document.createElement('div');
+            btnContainer.style.display = 'flex';
+            btnContainer.style.gap = '8px';
+            
+            const btnPago = document.createElement('button');
+            btnPago.className = 'btn btn-secondary';
+            btnPago.style.padding = '6px 10px';
+            btnPago.style.fontSize = '12px';
+            btnPago.textContent = a.pago ? 'Não Pago' : 'Pago';
+            btnPago.addEventListener('click', () => marcarHistoricoComoPago(a.id, !a.pago));
+            
+            const btnDelete = document.createElement('button');
+            btnDelete.className = 'btn btn-danger';
+            btnDelete.style.padding = '6px 10px';
+            btnDelete.style.fontSize = '12px';
+            btnDelete.textContent = '🗑️ Deletar';
+            btnDelete.addEventListener('click', () => deletarAvulsoHistorico(a.id));
+            
+            btnContainer.appendChild(btnPago);
+            btnContainer.appendChild(btnDelete);
+            li.appendChild(btnContainer);
+            ulHistorico.appendChild(li);
+          });
+          
+          console.log(`✅ Renderização histórico completa! ${historico.length} itens adicionados.`);
+          
+          if (historico.length === 0) {
+            const li = document.createElement('li');
+            li.style.textAlign = 'center';
+            li.style.color = 'var(--text-muted)';
+            li.textContent = 'Nenhum avulso no histórico';
+            ulHistorico.appendChild(li);
+          }
+        } else {
+          console.error('❌ Elemento #listaHistoricoAvulsos não encontrado no DOM!');
+        }
+        
+      } catch (err) {
+        console.error('Erro ao carregar avulsos:', err);
       }
-    });
-  </script>
+    }
+    
+    // MARCAR AVULSO COMO PAGO/NÃO PAGO
+    async function marcarAvulsoComoPago(id, marcarPago) {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        alert('Você precisa estar logado como admin');
+        return;
+      }
+      
+      try {
+        const endpoint = marcarPago ? `/avulsos/${id}/pago` : `/avulsos/${id}/nao-pago`;
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          mostrarMensagem(marcarPago ? 'Marcado como PAGO ✅' : 'Marcado como NÃO PAGO ❌', 'sucesso');
+          atualizarListaAvulsos();
+        } else {
+          mostrarMensagem(data.erro || 'Erro ao atualizar', 'erro');
+        }
+      } catch (err) {
+        mostrarMensagem('Erro ao atualizar status', 'erro');
+      }
+    }
 
-  <!-- App Logic -->
-  <script src="app.js"></script>
+    // MARCAR HISTÓRICO DE AVULSO COMO PAGO/NÃO PAGO
+    async function marcarHistoricoComoPago(id, marcarPago) {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        alert('Você precisa estar logado como admin');
+        return;
+      }
+      
+      try {
+        const endpoint = marcarPago ? `/historico-avulsos/${id}/pago` : `/historico-avulsos/${id}/nao-pago`;
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          mostrarMensagem(marcarPago ? 'Marcado como PAGO ✅' : 'Marcado como NÃO PAGO ❌', 'sucesso');
+          atualizarListaAvulsos();
+        } else {
+          mostrarMensagem(data.erro || 'Erro ao atualizar', 'erro');
+        }
+      } catch (err) {
+        mostrarMensagem('Erro ao atualizar status', 'erro');
+      }
+    }
+
+    // DELETAR AVULSO DO HISTÓRICO
+    async function deletarAvulsoHistorico(id) {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        alert('Você precisa estar logado como admin');
+        return;
+      }
+      
+      if (!confirm('Tem certeza que deseja deletar este avulso permanentemente?')) {
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/historico-avulsos/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          mostrarMensagem('Avulso deletado ✅', 'sucesso');
+          atualizarListaAvulsos();
+        } else {
+          mostrarMensagem(data.erro || 'Erro ao deletar', 'erro');
+        }
+      } catch (err) {
+        console.error(err);
+        mostrarMensagem('Erro ao deletar avulso', 'erro');
+      }
+    }
+
+    // FINALIZAR DIA (salvar avulsos para histórico e limpar confirmados)
+    // FINALIZAR DIA (AUTOMÁTICO ao limpar confirmados)
+    async function finalizarDia() {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        console.log('ℹ️ Finalizador de dia: usuário não logado como admin');
+        return;
+      }
+      
+      try {
+        const res = await fetch('/finalizar-dia', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          console.log(`✅ ${data.mensagem}`);
+          mostrarMensagem(`${data.avulsosSalvos} avulsos salvos no histórico ✅`, 'sucesso');
+          setTimeout(() => atualizarListaAvulsos(), 500);
+        } else {
+          console.error('Erro ao finalizar:', data.erro);
+        }
+      } catch (err) {
+        console.error('Erro ao finalizar dia:', err);
+      }
+    }
+
+    // CONFIRMAR PRESENÇA COMO ADMIN (sem restrição de dias)
+    async function confirmarComoAdmin(e) {
+      e.preventDefault();
+      
+      const nome = document.getElementById('nomeAdmin').value.trim();
+      const tipo = document.getElementById('tipoAdmin').value;
+      const genero = document.getElementById('generoAdmin').value;
+      const token = localStorage.getItem('adminToken');
+      
+      console.log('Confirmação Admin:', { nome, tipo, genero, token: token ? token.substring(0, 10) + '...' : 'sem token' });
+      
+      if (!nome || !tipo || !genero) {
+        mostrarMensagem('Preencha todos os campos', 'erro');
+        return;
+      }
+      
+      if (!token) {
+        mostrarMensagem('Você não está logado como admin', 'erro');
+        return;
+      }
+      
+      try {
+        const res = await fetch('/confirmar', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ nome, tipo, genero })
+        });
+        
+        const data = await res.json();
+        console.log('Resposta do servidor:', data);
+        
+        if (data.sucesso) {
+          const msg = data.reserva 
+            ? `✅ ${nome} adicionado(a) em RESERVA`
+            : `✅ ${nome} confirmado(a) como ${tipo}`;
+          mostrarMensagem(msg, 'sucesso');
+          
+          // Limpar formulário
+          document.getElementById('formConfirmaAdmin').reset();
+          
+          // Recarregar listas
+          atualizarLista();
+          
+          // Se foi avulso, atualizar lista de avulsos também
+          if (tipo === 'avulso') {
+            console.log('Avulso confirmado, atualizando lista de avulsos...');
+            atualizarListaAvulsos();
+          }
+        } else {
+          mostrarMensagem(data.erro || 'Erro ao confirmar', 'erro');
+        }
+      } catch (err) {
+        console.error('Erro:', err);
+        mostrarMensagem('Erro ao confirmar presença', 'erro');
+      }
+    }
+
+    // INICIALIZA
+    carregarRegrasConfirmacao();
+    // Recarregar regras a cada minuto (para atualizar se mudar de dia)
+    setInterval(carregarRegrasConfirmacao, 60000);
+    atualizarLista();
+    atualizarUIAdmin();
+    
+    // Event listener para formulário de admin
+    const formConfirmaAdmin = document.getElementById('formConfirmaAdmin');
+    if (formConfirmaAdmin) {
+      formConfirmaAdmin.addEventListener('submit', confirmarComoAdmin);
+    }
+  </script>
 </body>
 </html>
