@@ -225,8 +225,8 @@ app.get('/verificar-token', async (req, res) => {
 
 // FUNÇÃO AUXILIAR: Verificar se é permitido confirmar (baseado no dia da semana)
 function verificarDisponibilidadeConfirmacao(tipo) {
-  // Usar fuso horário do Brasil (UTC-3)
-  const agora = new Date(new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }));
+  // Usar fuso horário do Brasil (UTC-3) - converter com en-US para parse correto
+  const agora = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
   const diaSemana = agora.getDay(); // 0=domingo, 1=seg, 2=ter, 3=qua, 4=qui, 5=sexta, 6=sabado
   
   // Sábado (6) a Quinta (4): apenas mensalistas
@@ -255,8 +255,8 @@ function verificarDisponibilidadeConfirmacao(tipo) {
 
 // ENDPOINT: Obter regras de confirmação (para o frontend)
 app.get('/regras-confirmacao', async (req, res) => {
-  // Usar fuso horário do Brasil (UTC-3)
-  const agora = new Date(new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }));
+  // Usar fuso horário do Brasil (UTC-3) - converter com en-US para parse correto
+  const agora = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
   const diaSemana = agora.getDay();
   const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
   const diaAtual = diasSemana[diaSemana];
