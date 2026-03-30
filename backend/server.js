@@ -973,8 +973,10 @@ app.post('/pagamento/gerar-qr', async (req, res) => {
 
     const responseData = await response.json();
     const preferenceId = responseData.id;
+    const initPoint = responseData.init_point; // URL VÁLIDA DO MERCADO PAGO
 
     console.log(`✅ Preferência criada: ${preferenceId}`);
+    console.log(`📍 URL de checkout: ${initPoint}`);
 
     // Salvar registro de pagamento no banco
     const pagamento = await pool.query(
@@ -989,7 +991,7 @@ app.post('/pagamento/gerar-qr', async (req, res) => {
     res.json({
       sucesso: true,
       preferenceId,
-      linkPagamento: `https://mercadopago.com.br/checkout/v1/redirect?pref_id=${preferenceId}`,
+      linkPagamento: initPoint, // USAR O LINK VÁLIDO DO MERCADO PAGO
       pagamentoId: pagamento.rows[0].id,
       nome,
       cpf: cpfLimpo
