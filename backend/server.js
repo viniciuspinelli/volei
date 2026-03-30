@@ -11,7 +11,9 @@ const PORT = process.env.PORT || 3000;
 const MERCADO_PAGO_TOKEN = process.env.MERCADO_PAGO_TOKEN;
 
 if (!MERCADO_PAGO_TOKEN) {
-  console.warn('⚠️ MERCADO_PAGO_TOKEN não configurado como variável de ambiente!');
+  console.error('❌ MERCADO_PAGO_TOKEN NÃO CONFIGURADO! A funcionalidade de pagamento não funcionará.');
+} else {
+  console.log('✅ MERCADO_PAGO_TOKEN configurado com sucesso');
 }
 
 app.use(cors());
@@ -117,9 +119,32 @@ async function initDB() {
         data_jogo TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Criar tabela de pagamentos (para integração Mercado Pago)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS pagamentos_avulsos (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(255) NOT NULL,
+        cpf VARCHAR(11) NOT NULL,
+        valor DECIMAL(10, 2) DEFAULT 10.00,
+        tipo_pagamento VARCHAR(50) DEFAULT 'avulso',
+        id_preferencia_mp VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'pendente',
+        data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        data_pagamento TIMESTAMP,
+        qr_code TEXT
+      )
+    `);
     
     await client.query('COMMIT');
     console.log('✅ Tabelas criadas/verificadas com sucesso!');
+    console.log('   - confirmados_atual');
+    console.log('   - historico_confirmacoes');
+    console.log('   - admins');
+    console.log('   - admin_tokens');
+    console.log('   - reservas');
+    console.log('   - historico_avulsos');
+    console.log('   - pagamentos_avulsos (Mercado Pago)');
     
     // Criar admin padrão se não existir
     const adminExists = await client.query('SELECT * FROM admins WHERE usuario = $1', ['admin']);
@@ -863,44 +888,31 @@ app.delete('/historico-avulsos/:id', verificarAdmin, async (req, res) => {
 
 // ===== ROTAS DE PAGAMENTO - MERCADO PAGO =====
 
-// CRIAR TABELA DE PAGAMENTOS SE NÃO EXISTIR
-async function criarTabelaPagamentos() {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS pagamentos_avulsos (
-        id SERIAL PRIMARY KEY,
-        nome VARCHAR(255) NOT NULL,
-        cpf VARCHAR(11) NOT NULL,
-        valor DECIMAL(10, 2) DEFAULT 10.00,
-        tipo_pagamento VARCHAR(50) DEFAULT 'avulso',
-        id_preferencia_mp VARCHAR(255),
-        status VARCHAR(50) DEFAULT 'pendente',
-        data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        data_pagamento TIMESTAMP,
-        qr_code TEXT
-      )
-    `);
-    console.log('✅ Tabela de pagamentos verificada/criada');
-  } catch (err) {
-    console.error('Erro ao criar tabela de pagamentos:', err);
-  }
-}
-criarTabelaPagamentos();
-
 // GERAR QR CODE PARA PAGAMENTO
 app.post('/pagamento/gerar-qr', async (req, res) => {
   const { nome, cpf } = req.body;
+  
+  console.log('📱 POST /pagamento/gerar-qr - Recebido:', { nome, cpf: cpf ? cpf.substring(0, 5) + '***' : 'vazio' });
   
   if (!nome || !cpf) {
     return res.status(400).json({ erro: 'Nome e CPF são obrigatórios' });
   }
 
   try {
+    // Verificar token do Mercado Pago
+    if (!MERCADO_PAGO_TOKEN) {
+      console.error('❌ MERCADO_PAGO_TOKEN não está configurado!');
+      return res.status(500).json({ erro: 'Token Mercado Pago não configurado no servidor' });
+    }
+
     // Validar CPF básico (apenas números, 11 dígitos)
     const cpfLimpo = cpf.replace(/\D/g, '');
     if (cpfLimpo.length !== 11) {
       return res.status(400).json({ erro: 'CPF inválido. Digite 11 dígitos.' });
     }
+    
+    console.log(`✅ CPF válido: ${cpfLimpo.substring(0, 5)}***`);
+
 
     // Criar preferência de pagamento usando fetch (API REST)
     const preference = {
@@ -932,6 +944,7 @@ app.post('/pagamento/gerar-qr', async (req, res) => {
     };
 
     // Chamada à API REST do Mercado Pago
+    console.log('📡 Chamando API Mercado Pago...');
     const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',
       headers: {
@@ -941,14 +954,18 @@ app.post('/pagamento/gerar-qr', async (req, res) => {
       body: JSON.stringify(preference)
     });
 
+    console.log(`📊 Resposta Mercado Pago: Status ${response.status}`);
+
     if (!response.ok) {
       const error = await response.json();
-      console.error('Erro Mercado Pago:', error);
-      throw new Error(error.message || 'Erro ao criar preferência no Mercado Pago');
+      console.error('❌ Erro Mercado Pago:', error);
+      throw new Error(error.message || `Erro ao criar preferência (${response.status})`);
     }
 
     const responseData = await response.json();
     const preferenceId = responseData.id;
+
+    console.log(`✅ Preferência criada: ${preferenceId}`);
 
     // Salvar registro de pagamento no banco
     const pagamento = await pool.query(
@@ -957,6 +974,8 @@ app.post('/pagamento/gerar-qr', async (req, res) => {
        RETURNING *`,
       [nome, cpfLimpo, preferenceId]
     );
+
+    console.log(`✅ Registro salvo no banco: ID ${pagamento.rows[0].id}`);
 
     res.json({
       sucesso: true,
