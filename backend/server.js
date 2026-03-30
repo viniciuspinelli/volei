@@ -941,19 +941,13 @@ app.post('/pagamento/gerar-qr', async (req, res) => {
           unit_price: 10.00
         }
       ],
-      payer: {
-        name: nome,
-        email: 'pagamento@volei.local',
-        phone: {
-          area_code: '21',
-          number: '0000000000'
-        }
-      },
-      external_reference: `AVULSO_${cpfLimpo}_${Date.now()}`
+      external_reference: `AVULSO_${cpfLimpo}_${Date.now()}`,
+      marketplace: 'NONE'
     };
 
     // Chamada à API REST do Mercado Pago
     console.log('📡 Chamando API Mercado Pago...');
+    console.log('📤 Enviando preferência:', JSON.stringify(preference, null, 2));
     const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',
       headers: {
@@ -977,6 +971,7 @@ app.post('/pagamento/gerar-qr', async (req, res) => {
 
     console.log(`✅ Preferência criada: ${preferenceId}`);
     console.log(`📍 URL de checkout: ${initPoint}`);
+    console.log(`📋 Resposta completa do Mercado Pago:`, JSON.stringify(responseData, null, 2));
 
     // Salvar registro de pagamento no banco
     const pagamento = await pool.query(
