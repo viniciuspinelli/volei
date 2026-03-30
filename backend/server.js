@@ -8,11 +8,9 @@ const mercadopago = require('mercadopago');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configurar Mercado Pago
+// Configurar Mercado Pago (versão 2.x)
 const MERCADO_PAGO_TOKEN = process.env.MERCADO_PAGO_TOKEN || 'APP_USR-8238137063537582-011720-d1aba26f2dd7145dff751b5ab5169e78-128232021';
-mercadopago.configure({
-  access_token: MERCADO_PAGO_TOKEN
-});
+mercadopago.configs.setAccessToken(MERCADO_PAGO_TOKEN);
 
 app.use(cors());
 app.use(express.json());
@@ -902,7 +900,7 @@ app.post('/pagamento/gerar-qr', async (req, res) => {
       return res.status(400).json({ erro: 'CPF inválido. Digite 11 dígitos.' });
     }
 
-    // Criar preferência de pagamento no Mercado Pago
+    // Criar preferência de pagamento usando fetch (API REST)
     const preference = {
       items: [
         {
@@ -931,39 +929,36 @@ app.post('/pagamento/gerar-qr', async (req, res) => {
       auto_return: 'approved'
     };
 
-    const response = await mercadopago.preferences.create(preference);
-    const preferenceId = response.body.id;
+    // Chamada à API REST do Mercado Pago
+    const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${MERCADO_PAGO_TOKEN}`
+      },
+      body: JSON.stringify(preference)
+    });
 
-    // Gerar QR Code usando a API do Mercado Pago
-    const qrCodeResponse = await mercadopago.instore.orders.qr.create({
-      external_reference: `AVULSO_${cpfLimpo}_${Date.now()}`,
-      items: [
-        {
-          sku_number: 'AVULSO_10',
-          category: 'sports',
-          title: 'Pagamento Avulso - Vôlei',
-          description: `Confirmação de presença: ${nome}`,
-          unit_price: 10.00,
-          quantity: 1,
-          unit_measure: 'unit',
-          total_amount: 10.00
-        }
-      ],
-      title: `Pagamento Avulso - ${nome}`
-    }).catch(() => null); // Se falhar, continua sem QR Code
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('Erro Mercado Pago:', error);
+      throw new Error(error.message || 'Erro ao criar preferência no Mercado Pago');
+    }
+
+    const responseData = await response.json();
+    const preferenceId = responseData.id;
 
     // Salvar registro de pagamento no banco
     const pagamento = await pool.query(
-      `INSERT INTO pagamentos_avulsos (nome, cpf, id_preferencia_mp, qr_code) 
-       VALUES ($1, $2, $3, $4) 
+      `INSERT INTO pagamentos_avulsos (nome, cpf, id_preferencia_mp) 
+       VALUES ($1, $2, $3) 
        RETURNING *`,
-      [nome, cpfLimpo, preferenceId, qrCodeResponse?.body?.qr_data || null]
+      [nome, cpfLimpo, preferenceId]
     );
 
     res.json({
       sucesso: true,
       preferenceId,
-      qrCode: qrCodeResponse?.body?.qr_data || null,
       linkPagamento: `https://mercadopago.com.br/checkout/v1/redirect?pref_id=${preferenceId}`,
       pagamentoId: pagamento.rows[0].id,
       nome,
@@ -984,7 +979,17 @@ app.get('/pagamento/status/:preferenceId', async (req, res) => {
   const { preferenceId } = req.params;
 
   try {
-    const response = await mercadopago.preferences.get(preferenceId);
+    const response = await fetch(`https://api.mercadopago.com/checkout/preferences/${preferenceId}`, {
+      headers: {
+        'Authorization': `Bearer ${MERCADO_PAGO_TOKEN}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Preferência não encontrada');
+    }
+
+    const responseData = await response.json();
     
     // Buscar no banco de dados também
     const pagamento = await pool.query(
@@ -994,7 +999,7 @@ app.get('/pagamento/status/:preferenceId', async (req, res) => {
 
     res.json({
       preferenceId,
-      status: response.body.status,
+      status: responseData.status,
       pagamento: pagamento.rows[0] || null,
       linkPagamento: `https://mercadopago.com.br/checkout/v1/redirect?pref_id=${preferenceId}`
     });
@@ -1009,24 +1014,35 @@ app.get('/pagamento/status/:preferenceId', async (req, res) => {
 app.post('/pagamento/webhook', async (req, res) => {
   try {
     const data = req.body;
+    console.log('🔔 Webhook recebido:', data);
     
-    // O Mercado Pago envia notificações em diferentes formatos
-    // Verificar se é uma notificação de pagamento
-    if (data.type === 'payment' || data.action === 'payment.created') {
-      const paymentId = data.data?.id || data.id;
+    // Mercado Pago envia tipo de notificação em query params
+    const tipo = req.query.type;
+    const id = req.query.id;
+    
+    if (tipo === 'payment') {
+      // Buscar payment no Mercado Pago
+      const response = await fetch(`https://api.mercadopago.com/v1/payments/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${MERCADO_PAGO_TOKEN}`
+        }
+      });
+
+      if (!response.ok) {
+        return res.json({ sucesso: true });
+      }
+
+      const payment = await response.json();
       
-      // Buscar dados do pagamento no Mercado Pago
-      const payment = await mercadopago.payment.findById(paymentId);
-      
-      if (payment.body.status === 'approved') {
+      if (payment.status === 'approved') {
         // Atualizar status no banco
         await pool.query(
           `UPDATE pagamentos_avulsos SET status = 'pago', data_pagamento = NOW() 
            WHERE id_preferencia_mp = $1`,
-          [payment.body.preference_id]
+          [payment.preference_id]
         );
 
-        console.log(`✅ Pagamento aprovado: ${paymentId}`);
+        console.log(`✅ Pagamento aprovado: ${id}`);
       }
     }
     
