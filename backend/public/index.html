@@ -380,6 +380,7 @@
 }
 
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
   <!-- THREE.JS Canvas Background -->
@@ -408,6 +409,10 @@
         <button class="nav-item" id="btnAvulsosSidebar" data-page="avulsos" style="display:none;">
           <span class="icon">💰</span>
           <span>Avulsos</span>
+        </button>
+        <button class="nav-item" data-page="pagamentos">
+          <span class="icon">💳</span>
+          <span>Pagamentos</span>
         </button>
       </nav>
       <div class="sidebar-admin">
@@ -456,6 +461,61 @@
           <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 12px;">Avulsos de jogos anteriores (para controle de pagamento)</p>
           <ul class="lista-confirmados" id="listaHistoricoAvulsos"></ul>
         </div>
+      </section>
+      
+      <!-- Página Pagamentos -->
+      <section id="page-pagamentos" class="page">
+        <div class="page-header">
+          <h1 class="page-title">💳 Pagamento para Avulso</h1>
+          <p class="page-subtitle">Gere um QR Code para pagar R$ 10,00 de forma rápida e segura via Mercado Pago</p>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Gerar Código de Pagamento</h3>
+          <form id="formPagamento">
+            <div class="form-group">
+              <label class="form-label">Nome Completo</label>
+              <input type="text" id="pagNome" placeholder="Digite seu nome" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">CPF (11 dígitos)</label>
+              <input type="text" id="pagCPF" placeholder="Digite seu CPF (ex: 12345678901)" maxlength="14" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Gerar QR Code para Pagamento</button>
+          </form>
+        </div>
+
+        <div id="containerQRCode" style="display: none;">
+          <div class="card">
+            <h3 class="card-title">QR Code Gerado ✅</h3>
+            <div style="text-align: center; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 16px;">
+              <div id="qrCodeDisplay" style="background: white; padding: 20px; border-radius: 8px; display: inline-block;"></div>
+            </div>
+            <p style="color: var(--text-muted); text-align: center; font-size: 14px; margin-bottom: 16px;">
+              Escaneie o QR Code acima para pagar via Mercado Pago
+            </p>
+            <div style="text-align: center;">
+              <button class="btn btn-primary" id="btnAbrirLink" style="margin-bottom: 8px;">
+                Abrir Link de Pagamento
+              </button>
+              <button class="btn btn-secondary" onclick="document.getElementById('containerQRCode').style.display='none'; document.getElementById('formPagamento').reset();">
+                Gerar Novo
+              </button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">Informações do Pagamento</h3>
+            <div style="padding: 16px; background: rgba(52, 211, 153, 0.1); border-radius: 8px; border-left: 3px solid var(--accent-green);">
+              <p><strong>Nome:</strong> <span id="infoNome"></span></p>
+              <p><strong>CPF:</strong> <span id="infoCPF"></span></p>
+              <p><strong>Valor:</strong> <span id="infoValor">R$ 10,00</span></p>
+              <p><strong>Status:</strong> <span id="infoStatus" style="color: #ffd54f;">⏳ Aguardando pagamento</span></p>
+            </div>
+          </div>
+        </div>
+
+        <div id="mensagemPagamento" class="mensagem" style="display: none;"></div>
       </section>
       
       <!-- Página Confirmados -->
@@ -607,6 +667,10 @@
       <button class="bottom-nav-item" id="btnAvulsosMobile" data-page="avulsos" style="display:none;">
         <span class="icon">💰</span>
         <span>Avulsos</span>
+      </button>
+      <button class="bottom-nav-item" data-page="pagamentos">
+        <span class="icon">💳</span>
+        <span>Pagamentos</span>
       </button>
       <button class="bottom-nav-item" id="btnAdminMobile" onclick="abrirLogin()">
         <span class="icon">🔐</span>
@@ -1681,6 +1745,164 @@ function compartilharWhatsApp() {
     if (formConfirmaAdmin) {
       formConfirmaAdmin.addEventListener('submit', confirmarComoAdmin);
     }
+
+    // ===== FUNÇÕES DE PAGAMENTO =====
+    
+    // Formatar CPF para exibição
+    function formatarCPF(cpf) {
+      const cpfLimpo = cpf.replace(/\D/g, '');
+      if (cpfLimpo.length !== 11) return cpf;
+      return cpfLimpo.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    }
+
+    // Validar CPF
+    function validarCPF(cpf) {
+      const cpfLimpo = cpf.replace(/\D/g, '');
+      if (cpfLimpo.length !== 11) return false;
+      
+      // Verificar se todos os dígitos são iguais
+      if (/^(\d)\1{10}$/.test(cpfLimpo)) return false;
+      
+      // Validação básica (cálculos dos dígitos verificadores)
+      let soma = 0;
+      let resto;
+      
+      // Primeiro dígito
+      for (let i = 0; i < 9; i++) {
+        soma += parseInt(cpfLimpo[i]) * (10 - i);
+      }
+      resto = (soma * 10) % 11;
+      if (resto === 10 || resto === 11) resto = 0;
+      if (resto !== parseInt(cpfLimpo[9])) return false;
+      
+      // Segundo dígito
+      soma = 0;
+      for (let i = 0; i < 10; i++) {
+        soma += parseInt(cpfLimpo[i]) * (11 - i);
+      }
+      resto = (soma * 10) % 11;
+      if (resto === 10 || resto === 11) resto = 0;
+      if (resto !== parseInt(cpfLimpo[10])) return false;
+      
+      return true;
+    }
+
+    // Manipular submissão do formulário de pagamento
+    document.getElementById('formPagamento').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const nome = document.getElementById('pagNome').value.trim();
+      const cpf = document.getElementById('pagCPF').value.trim();
+      const msgPagamento = document.getElementById('mensagemPagamento');
+      
+      // Limpar mensagens anteriores
+      msgPagamento.style.display = 'none';
+      msgPagamento.innerHTML = '';
+      
+      // Validações
+      if (!nome) {
+        msgPagamento.className = 'mensagem erro';
+        msgPagamento.textContent = 'Por favor, digite seu nome completo';
+        msgPagamento.style.display = 'block';
+        return;
+      }
+      
+      if (!cpf) {
+        msgPagamento.className = 'mensagem erro';
+        msgPagamento.textContent = 'Por favor, digite seu CPF';
+        msgPagamento.style.display = 'block';
+        return;
+      }
+      
+      if (!validarCPF(cpf)) {
+        msgPagamento.className = 'mensagem erro';
+        msgPagamento.textContent = 'CPF inválido. Verifique os números.';
+        msgPagamento.style.display = 'block';
+        return;
+      }
+      
+      try {
+        msgPagamento.className = 'mensagem aviso';
+        msgPagamento.textContent = '⏳ Gerando código de pagamento...';
+        msgPagamento.style.display = 'block';
+        
+        const response = await fetch('/pagamento/gerar-qr', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            nome, 
+            cpf: cpf.replace(/\D/g, '')
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.erro || 'Erro ao gerar código');
+        }
+        
+        // Atualizar informações do pagamento
+        document.getElementById('infoNome').textContent = data.nome;
+        document.getElementById('infoCPF').textContent = formatarCPF(data.cpf);
+        
+        // Gerar QR Code
+        const containerQR = document.getElementById('qrCodeDisplay');
+        containerQR.innerHTML = '';
+        
+        if (data.qrCode) {
+          // Se o servidor retornar um QR Code em formato de imagem/dados
+          const img = document.createElement('img');
+          img.src = data.qrCode;
+          img.style.maxWidth = '300px';
+          containerQR.appendChild(img);
+        } else {
+          // Usar a biblioteca QRCode.js para gerar o QR do link
+          new QRCode(containerQR, {
+            text: data.linkPagamento,
+            width: 300,
+            height: 300,
+            colorDark: '#000000',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.H
+          });
+        }
+        
+        // Configurar botão de link
+        document.getElementById('btnAbrirLink').onclick = function() {
+          window.open(data.linkPagamento, '_blank');
+        };
+        
+        // Mostrar container com QR Code gerado
+        document.getElementById('containerQRCode').style.display = 'block';
+        
+        // Mostrar mensagem de sucesso
+        msgPagamento.className = 'mensagem sucesso';
+        msgPagamento.textContent = '✅ QR Code gerado com sucesso! Escaneie para pagar R$ 10,00';
+        msgPagamento.style.display = 'block';
+        
+        // Limpar formulário
+        this.reset();
+        
+      } catch (error) {
+        console.error('Erro ao gerar QR Code:', error);
+        msgPagamento.className = 'mensagem erro';
+        msgPagamento.textContent = '❌ ' + (error.message || 'Erro ao gerar código de pagamento');
+        msgPagamento.style.display = 'block';
+      }
+    });
+
+    // Formatador de CPF em tempo real
+    document.getElementById('pagCPF').addEventListener('input', function(e) {
+      let valor = e.target.value.replace(/\D/g, '');
+      if (valor.length <= 11) {
+        if (valor.length > 5) {
+          valor = valor.slice(0, 3) + '.' + valor.slice(3, 6) + '.' + valor.slice(6, 9) + '-' + valor.slice(9, 11);
+        } else if (valor.length > 2) {
+          valor = valor.slice(0, 3) + '.' + valor.slice(3);
+        }
+        e.target.value = valor;
+      }
+    });
   </script>
 
   <!-- THREE.JS LIBRARY -->

@@ -3,9 +3,16 @@ const { Pool } = require('pg');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const mercadopago = require('mercadopago');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Configurar Mercado Pago
+const MERCADO_PAGO_TOKEN = process.env.MERCADO_PAGO_TOKEN || 'APP_USR-8238137063537582-011720-d1aba26f2dd7145dff751b5ab5169e78-128232021';
+mercadopago.configure({
+  access_token: MERCADO_PAGO_TOKEN
+});
 
 app.use(cors());
 app.use(express.json());
@@ -851,6 +858,201 @@ app.delete('/historico-avulsos/:id', verificarAdmin, async (req, res) => {
   } catch (err) {
     console.error('Erro ao deletar avulso:', err);
     res.status(500).json({ erro: 'Erro ao deletar avulso' });
+  }
+});
+
+// ===== ROTAS DE PAGAMENTO - MERCADO PAGO =====
+
+// CRIAR TABELA DE PAGAMENTOS SE NÃO EXISTIR
+async function criarTabelaPagamentos() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS pagamentos_avulsos (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(255) NOT NULL,
+        cpf VARCHAR(11) NOT NULL,
+        valor DECIMAL(10, 2) DEFAULT 10.00,
+        tipo_pagamento VARCHAR(50) DEFAULT 'avulso',
+        id_preferencia_mp VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'pendente',
+        data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        data_pagamento TIMESTAMP,
+        qr_code TEXT
+      )
+    `);
+    console.log('✅ Tabela de pagamentos verificada/criada');
+  } catch (err) {
+    console.error('Erro ao criar tabela de pagamentos:', err);
+  }
+}
+criarTabelaPagamentos();
+
+// GERAR QR CODE PARA PAGAMENTO
+app.post('/pagamento/gerar-qr', async (req, res) => {
+  const { nome, cpf } = req.body;
+  
+  if (!nome || !cpf) {
+    return res.status(400).json({ erro: 'Nome e CPF são obrigatórios' });
+  }
+
+  try {
+    // Validar CPF básico (apenas números, 11 dígitos)
+    const cpfLimpo = cpf.replace(/\D/g, '');
+    if (cpfLimpo.length !== 11) {
+      return res.status(400).json({ erro: 'CPF inválido. Digite 11 dígitos.' });
+    }
+
+    // Criar preferência de pagamento no Mercado Pago
+    const preference = {
+      items: [
+        {
+          title: 'Pagamento Avulso - Vôlei',
+          description: `Confirmação de presença: ${nome}`,
+          quantity: 1,
+          currency_id: 'BRL',
+          unit_price: 10.00
+        }
+      ],
+      payer: {
+        name: nome,
+        email: 'pagamento@volei.local',
+        phone: {
+          area_code: '21',
+          number: '0000000000'
+        }
+      },
+      external_reference: `AVULSO_${cpfLimpo}_${Date.now()}`,
+      notification_url: `${process.env.CALLBACK_URL || 'http://localhost:3000'}/pagamento/webhook`,
+      back_urls: {
+        success: `${process.env.CALLBACK_URL || 'http://localhost:3000'}/pagamento/sucesso`,
+        failure: `${process.env.CALLBACK_URL || 'http://localhost:3000'}/pagamento/falha`,
+        pending: `${process.env.CALLBACK_URL || 'http://localhost:3000'}/pagamento/pendente`
+      },
+      auto_return: 'approved'
+    };
+
+    const response = await mercadopago.preferences.create(preference);
+    const preferenceId = response.body.id;
+
+    // Gerar QR Code usando a API do Mercado Pago
+    const qrCodeResponse = await mercadopago.instore.orders.qr.create({
+      external_reference: `AVULSO_${cpfLimpo}_${Date.now()}`,
+      items: [
+        {
+          sku_number: 'AVULSO_10',
+          category: 'sports',
+          title: 'Pagamento Avulso - Vôlei',
+          description: `Confirmação de presença: ${nome}`,
+          unit_price: 10.00,
+          quantity: 1,
+          unit_measure: 'unit',
+          total_amount: 10.00
+        }
+      ],
+      title: `Pagamento Avulso - ${nome}`
+    }).catch(() => null); // Se falhar, continua sem QR Code
+
+    // Salvar registro de pagamento no banco
+    const pagamento = await pool.query(
+      `INSERT INTO pagamentos_avulsos (nome, cpf, id_preferencia_mp, qr_code) 
+       VALUES ($1, $2, $3, $4) 
+       RETURNING *`,
+      [nome, cpfLimpo, preferenceId, qrCodeResponse?.body?.qr_data || null]
+    );
+
+    res.json({
+      sucesso: true,
+      preferenceId,
+      qrCode: qrCodeResponse?.body?.qr_data || null,
+      linkPagamento: `https://mercadopago.com.br/checkout/v1/redirect?pref_id=${preferenceId}`,
+      pagamentoId: pagamento.rows[0].id,
+      nome,
+      cpf: cpfLimpo
+    });
+
+  } catch (err) {
+    console.error('Erro ao gerar QR Code:', err);
+    res.status(500).json({ 
+      erro: 'Erro ao gerar código de pagamento',
+      detalhes: err.message 
+    });
+  }
+});
+
+// VERIFICAR STATUS DO PAGAMENTO
+app.get('/pagamento/status/:preferenceId', async (req, res) => {
+  const { preferenceId } = req.params;
+
+  try {
+    const response = await mercadopago.preferences.get(preferenceId);
+    
+    // Buscar no banco de dados também
+    const pagamento = await pool.query(
+      'SELECT * FROM pagamentos_avulsos WHERE id_preferencia_mp = $1',
+      [preferenceId]
+    );
+
+    res.json({
+      preferenceId,
+      status: response.body.status,
+      pagamento: pagamento.rows[0] || null,
+      linkPagamento: `https://mercadopago.com.br/checkout/v1/redirect?pref_id=${preferenceId}`
+    });
+
+  } catch (err) {
+    console.error('Erro ao verificar status:', err);
+    res.status(500).json({ erro: 'Erro ao verificar status do pagamento' });
+  }
+});
+
+// WEBHOOK - RECEBER NOTIFICAÇÕES DO MERCADO PAGO
+app.post('/pagamento/webhook', async (req, res) => {
+  try {
+    const data = req.body;
+    
+    // O Mercado Pago envia notificações em diferentes formatos
+    // Verificar se é uma notificação de pagamento
+    if (data.type === 'payment' || data.action === 'payment.created') {
+      const paymentId = data.data?.id || data.id;
+      
+      // Buscar dados do pagamento no Mercado Pago
+      const payment = await mercadopago.payment.findById(paymentId);
+      
+      if (payment.body.status === 'approved') {
+        // Atualizar status no banco
+        await pool.query(
+          `UPDATE pagamentos_avulsos SET status = 'pago', data_pagamento = NOW() 
+           WHERE id_preferencia_mp = $1`,
+          [payment.body.preference_id]
+        );
+
+        console.log(`✅ Pagamento aprovado: ${paymentId}`);
+      }
+    }
+    
+    res.json({ sucesso: true });
+
+  } catch (err) {
+    console.error('Erro no webhook:', err);
+    res.status(500).json({ erro: 'Erro ao processar webhook' });
+  }
+});
+
+// LISTAR PAGAMENTOS (ADMIN)
+app.get('/pagamentos/lista', verificarAdmin, async (req, res) => {
+  try {
+    const pagamentos = await pool.query(
+      'SELECT * FROM pagamentos_avulsos ORDER BY data_criacao DESC LIMIT 100'
+    );
+
+    res.json({
+      total: pagamentos.rows.length,
+      pagamentos: pagamentos.rows
+    });
+
+  } catch (err) {
+    console.error('Erro ao listar pagamentos:', err);
+    res.status(500).json({ erro: 'Erro ao listar pagamentos' });
   }
 });
 
