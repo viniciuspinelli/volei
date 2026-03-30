@@ -163,7 +163,18 @@ async function initDB() {
   }
 }
 
-initDB();
+// Inicializar banco de dados e depois iniciar servidor
+async function iniciarServidor() {
+  try {
+    await initDB();
+    console.log('🚀 Banco de dados pronto. Iniciando servidor...');
+  } catch (err) {
+    console.error('❌ Falha ao inicializar banco de dados:', err);
+    process.exit(1);
+  }
+}
+
+iniciarServidor();
 
 // MIDDLEWARE: Verificar token admin
 async function verificarAdmin(req, res, next) {
@@ -1093,6 +1104,9 @@ app.get('/pagamentos/lista', verificarAdmin, async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-});
+// Iniciar servidor APÓS o banco estar pronto
+setTimeout(() => {
+  app.listen(PORT, () => {
+    console.log(`✅ Servidor rodando na porta ${PORT}`);
+  });
+}, 500); // Pequeno delay para garantir que initDB() completou
