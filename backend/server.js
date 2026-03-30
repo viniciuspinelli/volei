@@ -949,14 +949,7 @@ app.post('/pagamento/gerar-qr', async (req, res) => {
           number: '0000000000'
         }
       },
-      external_reference: `AVULSO_${cpfLimpo}_${Date.now()}`,
-      notification_url: `${process.env.CALLBACK_URL || 'http://localhost:3000'}/pagamento/webhook`,
-      back_urls: {
-        success: `${process.env.CALLBACK_URL || 'http://localhost:3000'}/pagamento/sucesso`,
-        failure: `${process.env.CALLBACK_URL || 'http://localhost:3000'}/pagamento/falha`,
-        pending: `${process.env.CALLBACK_URL || 'http://localhost:3000'}/pagamento/pendente`
-      },
-      auto_return: 'approved'
+      external_reference: `AVULSO_${cpfLimpo}_${Date.now()}`
     };
 
     // Chamada à API REST do Mercado Pago
