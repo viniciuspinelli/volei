@@ -166,10 +166,15 @@ async function initDB() {
 // Inicializar banco de dados e depois iniciar servidor
 async function iniciarServidor() {
   try {
+    console.log('🔧 Inicializando banco de dados...');
     await initDB();
-    console.log('🚀 Banco de dados pronto. Iniciando servidor...');
+    console.log('✅ Banco de dados pronto!');
+    
+    app.listen(PORT, () => {
+      console.log(`🚀 Servidor rodando na porta ${PORT}`);
+    });
   } catch (err) {
-    console.error('❌ Falha ao inicializar banco de dados:', err);
+    console.error('❌ Falha crítica:', err);
     process.exit(1);
   }
 }
@@ -1104,9 +1109,4 @@ app.get('/pagamentos/lista', verificarAdmin, async (req, res) => {
   }
 });
 
-// Iniciar servidor APÓS o banco estar pronto
-setTimeout(() => {
-  app.listen(PORT, () => {
-    console.log(`✅ Servidor rodando na porta ${PORT}`);
-  });
-}, 500); // Pequeno delay para garantir que initDB() completou
+
