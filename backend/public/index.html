@@ -1845,39 +1845,36 @@ function compartilharWhatsApp() {
         document.getElementById('infoNome').textContent = data.nome;
         document.getElementById('infoCPF').textContent = formatarCPF(data.cpf);
         
-        // Gerar QR Code
+        // Gerar QR Code PIX
         const containerQR = document.getElementById('qrCodeDisplay');
         containerQR.innerHTML = '';
         
         if (data.qrCode) {
-          // Se o servidor retornar um QR Code em formato de imagem/dados
+          // Mostrar QR Code como imagem (PIX)
           const img = document.createElement('img');
           img.src = data.qrCode;
           img.style.maxWidth = '300px';
+          img.style.border = '2px solid #00a86b';
+          img.style.borderRadius = '8px';
+          img.style.padding = '10px';
+          img.alt = 'QR Code PIX';
           containerQR.appendChild(img);
-        } else {
-          // Usar a biblioteca QRCode.js para gerar o QR do link
-          new QRCode(containerQR, {
-            text: data.linkPagamento,
-            width: 300,
-            height: 300,
-            colorDark: '#000000',
-            colorLight: '#ffffff',
-            correctLevel: QRCode.CorrectLevel.H
-          });
+          
+          // Adicionar instrução
+          const instrucao = document.createElement('p');
+          instrucao.textContent = '📱 Escaneie com câmera ou abra o app do seu banco';
+          instrucao.style.marginTop = '15px';
+          instrucao.style.fontSize = '14px';
+          instrucao.style.color = '#666';
+          containerQR.appendChild(instrucao);
         }
-        
-        // Configurar botão de link
-        document.getElementById('btnAbrirLink').onclick = function() {
-          window.open(data.linkPagamento, '_blank');
-        };
         
         // Mostrar container com QR Code gerado
         document.getElementById('containerQRCode').style.display = 'block';
         
         // Mostrar mensagem de sucesso
         msgPagamento.className = 'mensagem sucesso';
-        msgPagamento.textContent = '✅ QR Code gerado com sucesso! Escaneie para pagar R$ 10,00';
+        msgPagamento.textContent = `✅ QR Code PIX gerado! Escaneie para pagar R$ ${data.valor || '10,00'}`;
         msgPagamento.style.display = 'block';
         
         // Limpar formulário
