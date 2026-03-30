@@ -3,14 +3,16 @@ const { Pool } = require('pg');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const mercadopago = require('mercadopago');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configurar Mercado Pago (versão 2.x)
-const MERCADO_PAGO_TOKEN = process.env.MERCADO_PAGO_TOKEN || 'APP_USR-8238137063537582-011720-d1aba26f2dd7145dff751b5ab5169e78-128232021';
-mercadopago.configs.setAccessToken(MERCADO_PAGO_TOKEN);
+// Token do Mercado Pago (usaremos apenas HTTP direto)
+const MERCADO_PAGO_TOKEN = process.env.MERCADO_PAGO_TOKEN;
+
+if (!MERCADO_PAGO_TOKEN) {
+  console.warn('⚠️ MERCADO_PAGO_TOKEN não configurado como variável de ambiente!');
+}
 
 app.use(cors());
 app.use(express.json());
