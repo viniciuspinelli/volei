@@ -16,79 +16,76 @@ const PAYMENT_VALUE = 10.00;
 
 // Função para gerar payload EMV QR Code válido para PIX
 function gerarPayloadPix(valor, chave, nome) {
-  // Formato EMV QR Code (BR Code) para PIX
-  // Referência: Banco Central do Brasil
+  // Formato EMV QR Code (BR Code) para PIX - Padrão BC
   
   // Helper para formatar campos EMV
-  function tag(id, valor) {
-    const val = String(valor);
-    const len = String(val.length).padStart(2, '0');
-    return id + len + val;
+  function emvTag(tag, value) {
+    const strValue = String(value);
+    const len = String(strValue.length).padStart(2, '0');
+    return tag + len + strValue;
   }
   
-  // GUI (Globally Unique Identifier) para PIX
-  const gui = tag('00', '01br.gov.bcb.pix');
-  
-  // Chave PIX (pode ser Email, Telefone, CPF ou UUID)
-  const chaveTag = tag('01', chave);
-  
-  // Merchant Account Information (ID 26)
-  const merchantInfo = tag('26', gui + chaveTag);
-  
-  // Construir payload base
+  // Construir payload
   let payload = '';
   
-  // Payload Format Indicator (00) = 01
-  payload += tag('00', '01');
+  // 00: Payload Format Indicator = 01
+  payload += emvTag('00', '01');
   
-  // Point of Initiation Method (01) = 12 (Payment)
-  payload += tag('01', '12');
+  // 01: Point of Initiation Method = 12 (Dynamic)
+  payload += emvTag('01', '12');
   
-  // Merchant Account Information (26)
-  payload += merchantInfo;
+  // 26: Merchant Account Information
+  let merchantInfo = '';
+  merchantInfo += emvTag('00', '01br.gov.bcb.pix'); // GUI
+  merchantInfo += emvTag('01', chave);              // Chave PIX
+  payload += emvTag('26', merchantInfo);
   
-  // Merchant Category Code (52) = 0000
-  payload += tag('52', '0000');
+  // 52: Merchant Category Code = 0000
+  payload += emvTag('52', '0000');
   
-  // Transaction Currency (53) = 986 (Real)
-  payload += tag('53', '986');
+  // 53: Transaction Currency = 986 (BRL)
+  payload += emvTag('53', '986');
   
-  // Transaction Amount (54)
-  payload += tag('54', valor.toFixed(2));
+  // 54: Transaction Amount (sem decimais para QR simples)
+  const valorFormatado = valor.toFixed(2).replace('.', '');
+  payload += emvTag('54', valorFormatado);
   
-  // Country Code (58) = BR
-  payload += tag('58', 'BR');
+  // 58: Country Code = BR
+  payload += emvTag('58', 'BR');
   
-  // Merchant Name (59)
-  payload += tag('59', nome.substring(0, 25));
+  // 59: Merchant Name (máx 25 caracteres)
+  const nomeTruncado = nome.substring(0, 25);
+  payload += emvTag('59', nomeTruncado);
   
-  // Merchant City (60)
-  payload += tag('60', 'Rio de Janeiro'.substring(0, 15));
+  // 60: Merchant City (máx 15 caracteres)
+  payload += emvTag('60', 'Rio de Janeiro'.substring(0, 15));
   
-  // Additional Data Field Template (62)
-  // Reference Label (05) com ID único
-  const referenceId = `AVULSO${Date.now() % 1000000}`;
-  const additionalData = tag('05', referenceId.substring(0, 25));
-  payload += tag('62', additionalData);
+  // 62: Additional Data Field Template
+  let additionalData = '';
+  const refId = `ID${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+  additionalData += emvTag('05', refId.substring(0, 25));
+  payload += emvTag('62', additionalData);
   
-  // CRC16 (CCITT)
-  payload += '6304'; // Field 63 (CRC16) com 04 bytes
-  
-  // Calcular CRC16
-  function crc16ccitt(str) {
+  // 63: CRC16 (será calculado sem o próprio campo CRC)
+  // CRC16-CCITT com polynom 0x1021
+  function crc16(str) {
     let crc = 0xFFFF;
     for (let i = 0; i < str.length; i++) {
       const byte = str.charCodeAt(i);
-      crc ^= (byte << 8);
+      crc ^= byte << 8;
       for (let j = 0; j < 8; j++) {
-        crc = ((crc << 1) ^ (0x1021 * ((crc & 0x8000) >> 15))) & 0xFFFF;
+        crc <<= 1;
+        if (crc & 0x10000) {
+          crc ^= 0x1021;
+        }
       }
+      crc &= 0xFFFF;
     }
-    return crc.toString(16).toUpperCase().padStart(4, '0');
+    return crc;
   }
   
-  const checksum = crc16ccitt(payload);
-  payload += checksum;
+  const checksum = crc16(payload).toString(16).toUpperCase().padStart(4, '0');
+  payload += emvTag('63', checksum);
   
   return payload;
 }
