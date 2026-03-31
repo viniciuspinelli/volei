@@ -467,51 +467,29 @@
       <section id="page-pagamentos" class="page">
         <div class="page-header">
           <h1 class="page-title">💳 Pagamento para Avulso</h1>
-          <p class="page-subtitle">Gere um QR Code para pagar R$ 10,00 de forma rápida e segura via Mercado Pago</p>
+          <p class="page-subtitle">Pague R$ 10,00 via PIX para participar do vôlei</p>
         </div>
 
         <div class="card">
-          <h3 class="card-title">Gerar Código de Pagamento</h3>
-          <form id="formPagamento">
-            <div class="form-group">
-              <label class="form-label">Nome Completo</label>
-              <input type="text" id="pagNome" placeholder="Digite seu nome" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">CPF (11 dígitos)</label>
-              <input type="text" id="pagCPF" placeholder="Digite seu CPF (ex: 12345678901)" maxlength="14" required>
-            </div>
-            <button type="submit" class="btn btn-primary btn-block">Gerar QR Code para Pagamento</button>
-          </form>
+          <h3 class="card-title">QR Code PIX - R$ 10,00</h3>
+          <div style="text-align: center; padding: 30px 20px; background: rgba(255,255,255,0.05); border-radius: 10px;">
+            <img src="/qrcode-pix.png" alt="QR Code PIX" style="max-width: 300px; width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+            <p style="color: var(--text-muted); margin-top: 16px; font-size: 14px;">
+              📱 Escaneie o código acima com sua câmera ou abra o app do seu banco
+            </p>
+          </div>
         </div>
 
-        <div id="containerQRCode" style="display: none;">
-          <div class="card">
-            <h3 class="card-title">QR Code Gerado ✅</h3>
-            <div style="text-align: center; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 16px;">
-              <div id="qrCodeDisplay" style="background: white; padding: 20px; border-radius: 8px; display: inline-block;"></div>
+        <div class="card">
+          <h3 class="card-title">Dados para Transferência Manual</h3>
+          <div style="padding: 16px; background: rgba(52, 211, 153, 0.1); border-radius: 8px; border-left: 3px solid var(--accent-green);">
+            <p style="margin-bottom: 12px;"><strong>Tipo:</strong> PIX - Chave Aleatória</p>
+            <div style="display: flex; align-items: center; gap: 8px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 6px; margin-bottom: 12px;">
+              <code style="flex: 1; word-break: break-all; font-family: monospace; font-size: 13px;">fc93315f-1e9c-4c5f-8be7-36b17c2cb1ed</code>
+              <button onclick="copyToClipboard('fc93315f-1e9c-4c5f-8be7-36b17c2cb1ed')" class="btn btn-secondary" style="white-space: nowrap;">Copiar</button>
             </div>
-            <p style="color: var(--text-muted); text-align: center; font-size: 14px; margin-bottom: 16px;">
-              Escaneie o QR Code acima para pagar via Mercado Pago
-            </p>
-            <div style="text-align: center;">
-              <button class="btn btn-primary" id="btnAbrirLink" style="margin-bottom: 8px;">
-                Abrir Link de Pagamento
-              </button>
-              <button class="btn btn-secondary" onclick="document.getElementById('containerQRCode').style.display='none'; document.getElementById('formPagamento').reset();">
-                Gerar Novo
-              </button>
-            </div>
-          </div>
-
-          <div class="card">
-            <h3 class="card-title">Informações do Pagamento</h3>
-            <div style="padding: 16px; background: rgba(52, 211, 153, 0.1); border-radius: 8px; border-left: 3px solid var(--accent-green);">
-              <p><strong>Nome:</strong> <span id="infoNome"></span></p>
-              <p><strong>CPF:</strong> <span id="infoCPF"></span></p>
-              <p><strong>Valor:</strong> <span id="infoValor">R$ 10,00</span></p>
-              <p><strong>Status:</strong> <span id="infoStatus" style="color: #ffd54f;">⏳ Aguardando pagamento</span></p>
-            </div>
+            <p><strong>Beneficiário:</strong> Vinicius Martins Pinelli</p>
+            <p><strong>Valor:</strong> R$ 10,00</p>
           </div>
         </div>
 
@@ -1787,134 +1765,14 @@ function compartilharWhatsApp() {
       return true;
     }
 
-    // Manipular submissão do formulário de pagamento
-    document.getElementById('formPagamento').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      
-      const nome = document.getElementById('pagNome').value.trim();
-      const cpf = document.getElementById('pagCPF').value.trim();
-      const msgPagamento = document.getElementById('mensagemPagamento');
-      
-      // Limpar mensagens anteriores
-      msgPagamento.style.display = 'none';
-      msgPagamento.innerHTML = '';
-      
-      // Validações
-      if (!nome) {
-        msgPagamento.className = 'mensagem erro';
-        msgPagamento.textContent = 'Por favor, digite seu nome completo';
-        msgPagamento.style.display = 'block';
-        return;
-      }
-      
-      if (!cpf) {
-        msgPagamento.className = 'mensagem erro';
-        msgPagamento.textContent = 'Por favor, digite seu CPF';
-        msgPagamento.style.display = 'block';
-        return;
-      }
-      
-      if (!validarCPF(cpf)) {
-        msgPagamento.className = 'mensagem erro';
-        msgPagamento.textContent = 'CPF inválido. Verifique os números.';
-        msgPagamento.style.display = 'block';
-        return;
-      }
-      
-      try {
-        msgPagamento.className = 'mensagem aviso';
-        msgPagamento.textContent = '⏳ Gerando código de pagamento...';
-        msgPagamento.style.display = 'block';
-        
-        const response = await fetch('/pagamento/gerar-qr', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            nome, 
-            cpf: cpf.replace(/\D/g, '')
-          })
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(data.erro || 'Erro ao gerar código');
-        }
-        
-        // Atualizar informações do pagamento
-        document.getElementById('infoNome').textContent = data.nome;
-        document.getElementById('infoCPF').textContent = formatarCPF(data.cpf);
-        
-        // Exibir QR Code PIX
-        const containerQR = document.getElementById('qrCodeDisplay');
-        containerQR.innerHTML = '';
-        
-        if (data.qrCode) {
-          // QR Code como imagem (gerado no servidor)
-          const img = document.createElement('img');
-          img.src = data.qrCode;
-          img.style.maxWidth = '300px';
-          img.style.border = '3px solid #00a86b';
-          img.style.borderRadius = '8px';
-          img.style.padding = '10px';
-          img.style.backgroundColor = '#fff';
-          img.alt = 'QR Code PIX';
-          img.title = 'Escaneie para pagar';
-          containerQR.appendChild(img);
-          
-          // Adicionar instrução
-          const instrucao = document.createElement('p');
-          instrucao.textContent = '📱 Escaneie com câmera ou abra o app do seu banco';
-          instrucao.style.marginTop = '15px';
-          instrucao.style.fontSize = '14px';
-          instrucao.style.color = '#666';
-          instrucao.style.margin = '10px 0 0 0';
-          containerQR.appendChild(instrucao);
-          
-          // Mostrar chave PIX para cópia manual
-          if (data.pixString) {
-            const chavePix = document.createElement('div');
-            chavePix.style.marginTop = '15px';
-            chavePix.style.padding = '10px';
-            chavePix.style.backgroundColor = '#f0f0f0';
-            chavePix.style.borderRadius = '5px';
-            chavePix.style.fontSize = '12px';
-            chavePix.innerHTML = `<strong>PIX:</strong> <code style="word-break: break-all;">${data.pixString}</code>`;
-            containerQR.appendChild(chavePix);
-          }
-        }
-        
-        // Mostrar container com QR Code gerado
-        document.getElementById('containerQRCode').style.display = 'block';
-        
-        // Mostrar mensagem de sucesso
-        msgPagamento.className = 'mensagem sucesso';
-        msgPagamento.textContent = `✅ QR Code PIX gerado! Escaneie para pagar R$ ${data.valor || '10,00'}`;
-        msgPagamento.style.display = 'block';
-        
-        // Limpar formulário
-        this.reset();
-        
-      } catch (error) {
-        console.error('Erro ao gerar QR Code:', error);
-        msgPagamento.className = 'mensagem erro';
-        msgPagamento.textContent = '❌ ' + (error.message || 'Erro ao gerar código de pagamento');
-        msgPagamento.style.display = 'block';
-      }
-    });
-
-    // Formatador de CPF em tempo real
-    document.getElementById('pagCPF').addEventListener('input', function(e) {
-      let valor = e.target.value.replace(/\D/g, '');
-      if (valor.length <= 11) {
-        if (valor.length > 5) {
-          valor = valor.slice(0, 3) + '.' + valor.slice(3, 6) + '.' + valor.slice(6, 9) + '-' + valor.slice(9, 11);
-        } else if (valor.length > 2) {
-          valor = valor.slice(0, 3) + '.' + valor.slice(3);
-        }
-        e.target.value = valor;
-      }
-    });
+    // Função para copiar texto para o clipboard
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert('✅ Chave PIX copiada!');
+      }).catch(err => {
+        console.error('Erro ao copiar:', err);
+      });
+    }
   </script>
 
   <!-- THREE.JS LIBRARY -->
