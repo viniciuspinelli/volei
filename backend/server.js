@@ -3,7 +3,7 @@ const { Pool } = require('pg');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const QRCodePix = require('qrcode-pix');
+const QRCode = require('qrcode');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,6 +13,14 @@ const PIX_KEY = 'fc93315f-1e9c-4c5f-8be7-36b17c2cb1ed';
 const PIX_BENEFICIARY = 'Vinicius Martins Pinelli';
 const PIX_CITY = 'Rio de Janeiro';
 const PAYMENT_VALUE = 10.00;
+
+// Função para gerar payload PIX (formato simplificado para testes)
+function gerarPayloadPix(valor, chave, beneficiario) {
+  // Formato PIX simplificado: dados estruturados
+  // Em produção, usar biblioteca apropriada para EMV QR Code
+  const payload = `${beneficiario}|${chave}|R$ ${valor.toFixed(2)}`;
+  return payload;
+}
 
 console.log('✅ PIX configurado:', {
   CHAVE: PIX_KEY.substring(0, 8) + '...',
@@ -940,23 +948,25 @@ app.post('/pagamento/gerar-qr', async (req, res) => {
     console.log('🏦 Gerando QR Code PIX...');
     
     try {
-      const qrCodePix = QRCodePix({
-        chave: PIX_KEY,
-        nome: PIX_BENEFICIARY,
-        cidade: PIX_CITY,
-        valor: PAYMENT_VALUE,
-        descricao: `Avulso - ${nome}`
+      // Gerar payload PIX
+      const pixString = gerarPayloadPix(PAYMENT_VALUE, PIX_KEY, PIX_BENEFICIARY);
+      console.log(`✅ Payload PIX gerado: ${pixString.substring(0, 50)}...`);
+
+      // Gerar imagem QR code
+      const qrImageDataUrl = await QRCode.toDataURL(pixString, {
+        errorCorrectionLevel: 'H',
+        type: 'image/png',
+        quality: 0.95,
+        margin: 1,
+        width: 300,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
       });
 
-      // Obter string EMV (payload PIX)
-      const pixString = qrCodePix.getRawValue ? qrCodePix.getRawValue() : qrCodePix.toString();
-      
-      console.log(`✅ QR Code PIX gerado`);
-      console.log(`📊 Payload PIX (primeiros 50 chars): ${pixString.substring(0, 50)}...`);
+      console.log(`✅ Imagem QR Code gerada (${qrImageDataUrl.length} bytes)`);
 
-      // Gerar QR code como imagem usando QRCode.js no cliente é mais simples
-      // Aqui vamos apenas retornar o payload PIX
-      
       // Salvar registro de pagamento no banco
       const referenceId = `AVULSO_${cpfLimpo}_${Date.now()}`;
       const pagamento = await pool.query(
@@ -968,10 +978,11 @@ app.post('/pagamento/gerar-qr', async (req, res) => {
 
       console.log(`✅ Registro salvo no banco: ID ${pagamento.rows[0].id}`);
 
-      // Retornar apenas o payload PIX - o frontend gera o QR code
+      // Retornar QR code como data URL
       res.json({
         sucesso: true,
         preferenceId: referenceId,
+        qrCode: qrImageDataUrl,
         pixString: pixString,
         pagamentoId: pagamento.rows[0].id,
         nome,

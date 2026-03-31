@@ -1845,20 +1845,22 @@ function compartilharWhatsApp() {
         document.getElementById('infoNome').textContent = data.nome;
         document.getElementById('infoCPF').textContent = formatarCPF(data.cpf);
         
-        // Gerar QR Code PIX no cliente
+        // Exibir QR Code PIX
         const containerQR = document.getElementById('qrCodeDisplay');
         containerQR.innerHTML = '';
         
-        if (data.pixString) {
-          // Usar QRCode.js para gerar QR a partir do payload PIX
-          new QRCode(containerQR, {
-            text: data.pixString,
-            width: 300,
-            height: 300,
-            colorDark: '#000000',
-            colorLight: '#FFFFFF',
-            correctLevel: QRCode.CorrectLevel.H
-          });
+        if (data.qrCode) {
+          // QR Code como imagem (gerado no servidor)
+          const img = document.createElement('img');
+          img.src = data.qrCode;
+          img.style.maxWidth = '300px';
+          img.style.border = '3px solid #00a86b';
+          img.style.borderRadius = '8px';
+          img.style.padding = '10px';
+          img.style.backgroundColor = '#fff';
+          img.alt = 'QR Code PIX';
+          img.title = 'Escaneie para pagar';
+          containerQR.appendChild(img);
           
           // Adicionar instrução
           const instrucao = document.createElement('p');
@@ -1866,7 +1868,20 @@ function compartilharWhatsApp() {
           instrucao.style.marginTop = '15px';
           instrucao.style.fontSize = '14px';
           instrucao.style.color = '#666';
+          instrucao.style.margin = '10px 0 0 0';
           containerQR.appendChild(instrucao);
+          
+          // Mostrar chave PIX para cópia manual
+          if (data.pixString) {
+            const chavePix = document.createElement('div');
+            chavePix.style.marginTop = '15px';
+            chavePix.style.padding = '10px';
+            chavePix.style.backgroundColor = '#f0f0f0';
+            chavePix.style.borderRadius = '5px';
+            chavePix.style.fontSize = '12px';
+            chavePix.innerHTML = `<strong>PIX:</strong> <code style="word-break: break-all;">${data.pixString}</code>`;
+            containerQR.appendChild(chavePix);
+          }
         }
         
         // Mostrar container com QR Code gerado
