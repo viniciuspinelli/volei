@@ -976,53 +976,53 @@ app.post('/pagamento/gerar-qr', async (req, res) => {
     const preferenceId = responseData.id;
     
     console.log(`✅ Preferência criada: ${preferenceId}`);
+    console.log(`📍 Init Point: ${responseData.init_point}`);
 
-    // O Mercado Pago fornece os dados de QR Code na resposta
-    // Precisamos solicitar o QR code dynamically
-    const qrResponse = await fetch(`https://api.mercadopago.com/v1/qr/seller`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${MERCADO_PAGO_TOKEN}`
-      },
-      body: JSON.stringify({
-        external_reference: preference.external_reference,
+    // Tentar gerar QR Code PIX usando o endpoint de QR code
+    // Mercado Pago pode oferecer QR code nativo
+    let pixQrCode = null;
+    let pixQrImage = null;
+
+    try {
+      // Tentativa 1: Solicitar QR Code de forma simples
+       const qrPayload = {
+        title: 'Pagamento Avulso - Vôlei',
+        description: 'QR Code PIX para pagamento',
         fixed_amount: true,
-        notification_url: preference.notification_url,
-        size: 300,
-        cash_out: {
-          amount: 10.00
+        cash_amount: 10.00,
+        external_reference: preference.external_reference
+      };
+
+      const qrResponse = await fetch('https://api.mercadopago.com/v1/qr/seller', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${MERCADO_PAGO_TOKEN}`
+        },
+        body: JSON.stringify(qrPayload)
+      });
+
+      if (qrResponse.ok) {
+        const qrData = await qrResponse.json();
+        if (qrData.qr_data) {
+          pixQrCode = qrData.qr_data;
+          console.log(`✅ QR Code PIX obtido do Mercado Pago`);
         }
-      })
-    });
-
-    let qrCode = null;
-    let qrData = null;
-
-    if (qrResponse.ok) {
-      qrData = await qrResponse.json();
-      qrCode = qrData.qr_data; // String EMV do PIX
-      console.log(`✅ QR Code PIX gerado pelo Mercado Pago`);
-    } else {
-      // Se falhar, usar init_point como fallback
-      console.log(`⚠️ QR Code PIX não disponível, usando init_point`);
-      qrCode = null;
+      }
+    } catch (qrErr) {
+      console.log(`⚠️ Erro ao tentar obter QR Code PIX:`, qrErr.message);
     }
 
-    // Salvar registro no banco
-    const pagamento = await pool.query(
-      `INSERT INTO pagamentos_avulsos (nome, cpf, id_preferencia_mp, status, qr_code) 
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING *`,
-      [nome, cpfLimpo, preferenceId, 'pendente', qrCode || preference.external_reference]
-    );
+    // Se não conseguir QR via API, gerar um simples
+    if (!pixQrCode) {
+      console.log(`ℹ️ Gerando QR Code a partir do init_point`);
+      pixQrCode = responseData.init_point;
+    }
 
-    console.log(`✅ Registro salvo no banco: ID ${pagamento.rows[0].id}`);
-
-    // Gerar imagem QR code a partir do payload PIX
+    // Gerar imagem QR code
     let qrImageDataUrl = null;
-    if (qrCode) {
-      qrImageDataUrl = await QRCode.toDataURL(qrCode, {
+    try {
+      qrImageDataUrl = await QRCode.toDataURL(pixQrCode, {
         errorCorrectionLevel: 'H',
         type: 'image/png',
         quality: 0.95,
@@ -1033,18 +1033,32 @@ app.post('/pagamento/gerar-qr', async (req, res) => {
           light: '#FFFFFF'
         }
       });
+      console.log(`✅ Imagem QR Code gerada`);
+    } catch (imgErr) {
+      console.error(`❌ Erro ao gerar imagem QR:`, imgErr.message);
     }
+
+    // Salvar registro no banco
+    const pagamento = await pool.query(
+      `INSERT INTO pagamentos_avulsos (nome, cpf, id_preferencia_mp, status, qr_code) 
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [nome, cpfLimpo, preferenceId, 'pendente', pixQrCode]
+    );
+
+    console.log(`✅ Registro salvo no banco: ID ${pagamento.rows[0].id}`);
 
     res.json({
       sucesso: true,
       preferenceId,
       qrCode: qrImageDataUrl,
-      pixString: qrCode,
+      pixString: pixQrCode,
       pagamentoId: pagamento.rows[0].id,
       nome,
       cpf: cpfLimpo,
       valor: 10.00,
-      tipo: 'PIX_MERCADO_PAGO'
+      tipo: 'PIX_MERCADO_PAGO',
+      checkoutUrl: responseData.init_point
     });
 
   } catch (err) {
