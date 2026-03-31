@@ -8,99 +8,11 @@ const QRCode = require('qrcode');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configuração PIX
-const PIX_KEY = 'fc93315f-1e9c-4c5f-8be7-36b17c2cb1ed';
-const PIX_BENEFICIARY = 'Vinicius Martins Pinelli';
-const PIX_CITY = 'Rio de Janeiro';
-const PAYMENT_VALUE = 10.00;
-
-// Função para gerar payload EMV QR Code válido para PIX
-function gerarPayloadPix(valor, chave, nome) {
-  // Formato EMV QR Code (BR Code) para PIX - Padrão BC
-  
-  // Helper para formatar campos EMV
-  function emvTag(tag, value) {
-    const strValue = String(value);
-    const len = String(strValue.length).padStart(2, '0');
-    return tag + len + strValue;
-  }
-  
-  // Construir payload
-  let payload = '';
-  
-  // 00: Payload Format Indicator = 01
-  payload += emvTag('00', '01');
-  
-  // 01: Point of Initiation Method = 12 (Dynamic)
-  payload += emvTag('01', '12');
-  
-  // 26: Merchant Account Information
-  let merchantInfo = '';
-  merchantInfo += emvTag('00', '01br.gov.bcb.pix'); // GUI
-  merchantInfo += emvTag('01', chave);              // Chave PIX
-  payload += emvTag('26', merchantInfo);
-  
-  // 52: Merchant Category Code = 0000
-  payload += emvTag('52', '0000');
-  
-  // 53: Transaction Currency = 986 (BRL)
-  payload += emvTag('53', '986');
-  
-  // 54: Transaction Amount (sem decimais para QR simples)
-  const valorFormatado = valor.toFixed(2).replace('.', '');
-  payload += emvTag('54', valorFormatado);
-  
-  // 58: Country Code = BR
-  payload += emvTag('58', 'BR');
-  
-  // 59: Merchant Name (máx 25 caracteres)
-  const nomeTruncado = nome.substring(0, 25);
-  payload += emvTag('59', nomeTruncado);
-  
-  // 60: Merchant City (máx 15 caracteres)
-  payload += emvTag('60', 'Rio de Janeiro'.substring(0, 15));
-  
-  // 62: Additional Data Field Template
-  let additionalData = '';
-  const refId = `ID${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-  additionalData += emvTag('05', refId.substring(0, 25));
-  payload += emvTag('62', additionalData);
-  
-  // 63: CRC16 (será calculado sem o próprio campo CRC)
-  // CRC16-CCITT com polynom 0x1021
-  function crc16(str) {
-    let crc = 0xFFFF;
-    for (let i = 0; i < str.length; i++) {
-      const byte = str.charCodeAt(i);
-      crc ^= byte << 8;
-      for (let j = 0; j < 8; j++) {
-        crc <<= 1;
-        if (crc & 0x10000) {
-          crc ^= 0x1021;
-        }
-      }
-      crc &= 0xFFFF;
-    }
-    return crc;
-  }
-  
-  const checksum = crc16(payload).toString(16).toUpperCase().padStart(4, '0');
-  payload += emvTag('63', checksum);
-  
-  return payload;
-}
-
-console.log('✅ PIX configurado:', {
-  CHAVE: PIX_KEY.substring(0, 8) + '...',
-  BENEFICIARIO: PIX_BENEFICIARY,
-  VALOR: `R$ ${PAYMENT_VALUE.toFixed(2)}`
-});
-
-// Token do Mercado Pago (agora não é mais necessário, mas mantemos para compatibilidade)
+// Token do Mercado Pago
 const MERCADO_PAGO_TOKEN = process.env.MERCADO_PAGO_TOKEN;
 
 if (!MERCADO_PAGO_TOKEN) {
-  console.log('ℹ️  MERCADO_PAGO_TOKEN não configurado (OK - usando PIX)');
+  console.error('❌ MERCADO_PAGO_TOKEN NÃO CONFIGURADO!');
 } else {
   console.log('✅ MERCADO_PAGO_TOKEN configurado com sucesso');
 }
@@ -991,9 +903,9 @@ app.delete('/historico-avulsos/:id', verificarAdmin, async (req, res) => {
   }
 });
 
-// ===== ROTAS DE PAGAMENTO - PIX =====
+// ===== ROTAS DE PAGAMENTO - MERCADO PAGO COM QR CODE PIX =====
 
-// GERAR QR CODE PIX PARA PAGAMENTO
+// GERAR QR CODE PIX PARA PAGAMENTO (Mercado Pago)
 app.post('/pagamento/gerar-qr', async (req, res) => {
   const { nome, cpf } = req.body;
   
@@ -1004,7 +916,12 @@ app.post('/pagamento/gerar-qr', async (req, res) => {
   }
 
   try {
-    // Validar CPF básico (apenas números, 11 dígitos)
+    if (!MERCADO_PAGO_TOKEN) {
+      console.error('❌ MERCADO_PAGO_TOKEN não configurado');
+      return res.status(500).json({ erro: 'Token Mercado Pago não configurado' });
+    }
+
+    // Validar CPF básico
     const cpfLimpo = cpf.replace(/\D/g, '');
     if (cpfLimpo.length !== 11) {
       return res.status(400).json({ erro: 'CPF inválido. Digite 11 dígitos.' });
@@ -1012,16 +929,100 @@ app.post('/pagamento/gerar-qr', async (req, res) => {
     
     console.log(`✅ CPF válido: ${cpfLimpo.substring(0, 5)}***`);
 
-    // Gerar QR Code PIX com valor fixo de R$ 10.00
-    console.log('🏦 Gerando QR Code PIX...');
+    // Criar preferência de pagamento no Mercado Pago
+    console.log('🏦 Criando preferência Mercado Pago para QR Code PIX...');
     
-    try {
-      // Gerar payload PIX
-      const pixString = gerarPayloadPix(PAYMENT_VALUE, PIX_KEY, PIX_BENEFICIARY);
-      console.log(`✅ Payload PIX gerado: ${pixString.substring(0, 50)}...`);
+    const preference = {
+      items: [
+        {
+          title: 'Pagamento Avulso - Vôlei',
+          description: `Confirmação de presença: ${nome}`,
+          quantity: 1,
+          currency_id: 'BRL',
+          unit_price: 10.00
+        }
+      ],
+      payer: {
+        name: nome,
+        email: 'pagador@volei.local'
+      },
+      payment_methods: {
+        excluded_payment_types: [
+          { id: 'ticket' },
+          { id: 'atm' }
+        ],
+        installments: 1
+      },
+      external_reference: `AVULSO_${cpfLimpo}_${Date.now()}`,
+      notification_url: `${process.env.CALLBACK_URL || 'https://volei-app.onrender.com'}/pagamento/webhook`
+    };
 
-      // Gerar imagem QR code
-      const qrImageDataUrl = await QRCode.toDataURL(pixString, {
+    const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${MERCADO_PAGO_TOKEN}`
+      },
+      body: JSON.stringify(preference)
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('❌ Erro Mercado Pago:', error);
+      throw new Error(error.message || `Erro ao criar preferência (${response.status})`);
+    }
+
+    const responseData = await response.json();
+    const preferenceId = responseData.id;
+    
+    console.log(`✅ Preferência criada: ${preferenceId}`);
+
+    // O Mercado Pago fornece os dados de QR Code na resposta
+    // Precisamos solicitar o QR code dynamically
+    const qrResponse = await fetch(`https://api.mercadopago.com/v1/qr/seller`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${MERCADO_PAGO_TOKEN}`
+      },
+      body: JSON.stringify({
+        external_reference: preference.external_reference,
+        fixed_amount: true,
+        notification_url: preference.notification_url,
+        size: 300,
+        cash_out: {
+          amount: 10.00
+        }
+      })
+    });
+
+    let qrCode = null;
+    let qrData = null;
+
+    if (qrResponse.ok) {
+      qrData = await qrResponse.json();
+      qrCode = qrData.qr_data; // String EMV do PIX
+      console.log(`✅ QR Code PIX gerado pelo Mercado Pago`);
+    } else {
+      // Se falhar, usar init_point como fallback
+      console.log(`⚠️ QR Code PIX não disponível, usando init_point`);
+      qrCode = null;
+    }
+
+    // Salvar registro no banco
+    const pagamento = await pool.query(
+      `INSERT INTO pagamentos_avulsos (nome, cpf, id_preferencia_mp, status, qr_code) 
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [nome, cpfLimpo, preferenceId, 'pendente', qrCode || preference.external_reference]
+    );
+
+    console.log(`✅ Registro salvo no banco: ID ${pagamento.rows[0].id}`);
+
+    // Gerar imagem QR code a partir do payload PIX
+    let qrImageDataUrl = null;
+    if (qrCode) {
+      qrImageDataUrl = await QRCode.toDataURL(qrCode, {
         errorCorrectionLevel: 'H',
         type: 'image/png',
         quality: 0.95,
@@ -1032,36 +1033,19 @@ app.post('/pagamento/gerar-qr', async (req, res) => {
           light: '#FFFFFF'
         }
       });
-
-      console.log(`✅ Imagem QR Code gerada (${qrImageDataUrl.length} bytes)`);
-
-      // Salvar registro de pagamento no banco
-      const referenceId = `AVULSO_${cpfLimpo}_${Date.now()}`;
-      const pagamento = await pool.query(
-        `INSERT INTO pagamentos_avulsos (nome, cpf, id_preferencia_mp, status, qr_code) 
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING *`,
-        [nome, cpfLimpo, referenceId, 'pendente', pixString]
-      );
-
-      console.log(`✅ Registro salvo no banco: ID ${pagamento.rows[0].id}`);
-
-      // Retornar QR code como data URL
-      res.json({
-        sucesso: true,
-        preferenceId: referenceId,
-        qrCode: qrImageDataUrl,
-        pixString: pixString,
-        pagamentoId: pagamento.rows[0].id,
-        nome,
-        cpf: cpfLimpo,
-        valor: PAYMENT_VALUE,
-        tipo: 'PIX'
-      });
-    } catch (pixErr) {
-      console.error('❌ Erro ao gerar QR Code PIX:', pixErr);
-      throw pixErr;
     }
+
+    res.json({
+      sucesso: true,
+      preferenceId,
+      qrCode: qrImageDataUrl,
+      pixString: qrCode,
+      pagamentoId: pagamento.rows[0].id,
+      nome,
+      cpf: cpfLimpo,
+      valor: 10.00,
+      tipo: 'PIX_MERCADO_PAGO'
+    });
 
   } catch (err) {
     console.error('❌ Erro ao gerar QR Code:', err);
