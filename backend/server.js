@@ -3,7 +3,7 @@ const { Pool } = require('pg');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const { QRCodePix } = require('qrcode-pix');
+const QRCodePix = require('qrcode-pix');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -939,57 +939,53 @@ app.post('/pagamento/gerar-qr', async (req, res) => {
     // Gerar QR Code PIX com valor fixo de R$ 10.00
     console.log('🏦 Gerando QR Code PIX...');
     
-    const qrCodePix = QRCodePix({
-      chave: PIX_KEY,
-      nome: PIX_BENEFICIARY,
-      cidade: PIX_CITY,
-      valor: PAYMENT_VALUE,
-      descricao: `Avulso - ${nome} - CPF: ${cpfLimpo.substring(0, 3)}***`
-    });
+    try {
+      const qrCodePix = QRCodePix({
+        chave: PIX_KEY,
+        nome: PIX_BENEFICIARY,
+        cidade: PIX_CITY,
+        valor: PAYMENT_VALUE,
+        descricao: `Avulso - ${nome}`
+      });
 
-    const qrImage = await qrCodePix.generateImage({
-      type: 'image/png',
-      width: 300,
-      margin: 1,
-      color: {
-        dark: '#000000',
-        light: '#FFFFFF'
-      }
-    });
+      // Obter string EMV (payload PIX)
+      const pixString = qrCodePix.getRawValue ? qrCodePix.getRawValue() : qrCodePix.toString();
+      
+      console.log(`✅ QR Code PIX gerado`);
+      console.log(`📊 Payload PIX (primeiros 50 chars): ${pixString.substring(0, 50)}...`);
 
-    const pixString = qrCodePix.getRawValue();
-    
-    console.log(`✅ QR Code PIX gerado`);
-    console.log(`📊 Payload PIX (primeiros 50 chars): ${pixString.substring(0, 50)}...`);
+      // Gerar QR code como imagem usando QRCode.js no cliente é mais simples
+      // Aqui vamos apenas retornar o payload PIX
+      
+      // Salvar registro de pagamento no banco
+      const referenceId = `AVULSO_${cpfLimpo}_${Date.now()}`;
+      const pagamento = await pool.query(
+        `INSERT INTO pagamentos_avulsos (nome, cpf, id_preferencia_mp, status, qr_code) 
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING *`,
+        [nome, cpfLimpo, referenceId, 'pendente', pixString]
+      );
 
-    // Salvar registro de pagamento no banco
-    const referenceId = `AVULSO_${cpfLimpo}_${Date.now()}`;
-    const pagamento = await pool.query(
-      `INSERT INTO pagamentos_avulsos (nome, cpf, id_preferencia_mp, status, qr_code) 
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING *`,
-      [nome, cpfLimpo, referenceId, 'pendente', pixString]
-    );
+      console.log(`✅ Registro salvo no banco: ID ${pagamento.rows[0].id}`);
 
-    console.log(`✅ Registro salvo no banco: ID ${pagamento.rows[0].id}`);
-
-    // Converter imagem para base64
-    const qrImageBase64 = 'data:image/png;base64,' + qrImage.toString('base64');
-
-    res.json({
-      sucesso: true,
-      preferenceId: referenceId,
-      qrCode: qrImageBase64,
-      pixString: pixString,
-      pagamentoId: pagamento.rows[0].id,
-      nome,
-      cpf: cpfLimpo,
-      valor: PAYMENT_VALUE,
-      tipo: 'PIX'
-    });
+      // Retornar apenas o payload PIX - o frontend gera o QR code
+      res.json({
+        sucesso: true,
+        preferenceId: referenceId,
+        pixString: pixString,
+        pagamentoId: pagamento.rows[0].id,
+        nome,
+        cpf: cpfLimpo,
+        valor: PAYMENT_VALUE,
+        tipo: 'PIX'
+      });
+    } catch (pixErr) {
+      console.error('❌ Erro ao gerar QR Code PIX:', pixErr);
+      throw pixErr;
+    }
 
   } catch (err) {
-    console.error('❌ Erro ao gerar QR Code PIX:', err);
+    console.error('❌ Erro ao gerar QR Code:', err);
     res.status(500).json({ 
       erro: 'Erro ao gerar código de pagamento',
       detalhes: err.message 

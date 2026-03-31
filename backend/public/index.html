@@ -1845,20 +1845,20 @@ function compartilharWhatsApp() {
         document.getElementById('infoNome').textContent = data.nome;
         document.getElementById('infoCPF').textContent = formatarCPF(data.cpf);
         
-        // Gerar QR Code PIX
+        // Gerar QR Code PIX no cliente
         const containerQR = document.getElementById('qrCodeDisplay');
         containerQR.innerHTML = '';
         
-        if (data.qrCode) {
-          // Mostrar QR Code como imagem (PIX)
-          const img = document.createElement('img');
-          img.src = data.qrCode;
-          img.style.maxWidth = '300px';
-          img.style.border = '2px solid #00a86b';
-          img.style.borderRadius = '8px';
-          img.style.padding = '10px';
-          img.alt = 'QR Code PIX';
-          containerQR.appendChild(img);
+        if (data.pixString) {
+          // Usar QRCode.js para gerar QR a partir do payload PIX
+          new QRCode(containerQR, {
+            text: data.pixString,
+            width: 300,
+            height: 300,
+            colorDark: '#000000',
+            colorLight: '#FFFFFF',
+            correctLevel: QRCode.CorrectLevel.H
+          });
           
           // Adicionar instrução
           const instrucao = document.createElement('p');
