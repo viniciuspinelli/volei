@@ -14,11 +14,82 @@ const PIX_BENEFICIARY = 'Vinicius Martins Pinelli';
 const PIX_CITY = 'Rio de Janeiro';
 const PAYMENT_VALUE = 10.00;
 
-// Função para gerar payload PIX (formato simplificado para testes)
-function gerarPayloadPix(valor, chave, beneficiario) {
-  // Formato PIX simplificado: dados estruturados
-  // Em produção, usar biblioteca apropriada para EMV QR Code
-  const payload = `${beneficiario}|${chave}|R$ ${valor.toFixed(2)}`;
+// Função para gerar payload EMV QR Code válido para PIX
+function gerarPayloadPix(valor, chave, nome) {
+  // Formato EMV QR Code (BR Code) para PIX
+  // Referência: Banco Central do Brasil
+  
+  // Helper para formatar campos EMV
+  function tag(id, valor) {
+    const val = String(valor);
+    const len = String(val.length).padStart(2, '0');
+    return id + len + val;
+  }
+  
+  // GUI (Globally Unique Identifier) para PIX
+  const gui = tag('00', '01br.gov.bcb.pix');
+  
+  // Chave PIX (pode ser Email, Telefone, CPF ou UUID)
+  const chaveTag = tag('01', chave);
+  
+  // Merchant Account Information (ID 26)
+  const merchantInfo = tag('26', gui + chaveTag);
+  
+  // Construir payload base
+  let payload = '';
+  
+  // Payload Format Indicator (00) = 01
+  payload += tag('00', '01');
+  
+  // Point of Initiation Method (01) = 12 (Payment)
+  payload += tag('01', '12');
+  
+  // Merchant Account Information (26)
+  payload += merchantInfo;
+  
+  // Merchant Category Code (52) = 0000
+  payload += tag('52', '0000');
+  
+  // Transaction Currency (53) = 986 (Real)
+  payload += tag('53', '986');
+  
+  // Transaction Amount (54)
+  payload += tag('54', valor.toFixed(2));
+  
+  // Country Code (58) = BR
+  payload += tag('58', 'BR');
+  
+  // Merchant Name (59)
+  payload += tag('59', nome.substring(0, 25));
+  
+  // Merchant City (60)
+  payload += tag('60', 'Rio de Janeiro'.substring(0, 15));
+  
+  // Additional Data Field Template (62)
+  // Reference Label (05) com ID único
+  const referenceId = `AVULSO${Date.now() % 1000000}`;
+  const additionalData = tag('05', referenceId.substring(0, 25));
+  payload += tag('62', additionalData);
+  
+  // CRC16 (CCITT)
+  payload += '6304'; // Field 63 (CRC16) com 04 bytes
+  
+  // Calcular CRC16
+  function crc16ccitt(str) {
+    let crc = 0xFFFF;
+    for (let i = 0; i < str.length; i++) {
+      const byte = str.charCodeAt(i);
+      crc ^= (byte << 8);
+      for (let j = 0; j < 8; j++) {
+        crc = ((crc << 1) ^ (0x1021 * ((crc & 0x8000) >> 15))) & 0xFFFF;
+      }
+    }
+    return crc.toString(16).toUpperCase().padStart(4, '0');
+  }
+  
+  const checksum = crc16ccitt(payload);
+  payload += checksum;
+  
   return payload;
 }
 
