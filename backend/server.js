@@ -353,6 +353,11 @@ app.post('/confirmar', async (req, res) => {
       );
       isAdmin = tokenResult.rows.length > 0;
       console.log('Token válido:', isAdmin);
+      if (!isAdmin) {
+        // Token fornecido mas inválido/expirado
+        console.log('⚠️ Token inválido ou expirado');
+        return res.status(401).json({ sucesso: false, erro: 'Token inválido ou expirado. Faça login novamente.' });
+      }
     }
     
     // VERIFICAR SE PODE CONFIRMAR (pula validação se for admin)

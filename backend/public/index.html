@@ -680,6 +680,27 @@
     let adminToken = localStorage.getItem('adminToken') || null;
     let isAdmin = !!adminToken;
 
+    // VERIFICAR TOKEN NA INICIALIZAÇÃO (garante que token ainda é válido no servidor)
+    async function verificarTokenInicial() {
+      if (!adminToken) return;
+      try {
+        const res = await fetch('/verificar-token', {
+          headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        const data = await res.json();
+        if (!data.valido) {
+          // Token expirado ou inválido - limpar sessão
+          adminToken = null;
+          isAdmin = false;
+          localStorage.removeItem('adminToken');
+          atualizarUIAdmin();
+        }
+      } catch (err) {
+        // Se não conseguir verificar, mantém o estado atual
+        console.warn('Não foi possível verificar o token:', err);
+      }
+    }
+
     // FUNÇÕES CRÍTICAS - DEVEM SER DEFINIDAS PRIMEIRO
     function mostrarMensagem(texto, tipo = '') {
       const el = document.getElementById('mensagem');
@@ -1702,6 +1723,14 @@ function compartilharWhatsApp() {
             console.log('Avulso confirmado, atualizando lista de avulsos...');
             atualizarListaAvulsos();
           }
+        } else if (res.status === 401 || (data.erro && data.erro.includes('Token'))) {
+          // Token expirado - forçar re-login
+          adminToken = null;
+          isAdmin = false;
+          localStorage.removeItem('adminToken');
+          atualizarUIAdmin();
+          mostrarMensagem('Sessão expirada. Faça login novamente.', 'erro');
+          abrirLogin();
         } else {
           mostrarMensagem(data.erro || 'Erro ao confirmar', 'erro');
         }
@@ -1716,7 +1745,8 @@ function compartilharWhatsApp() {
     // Recarregar regras a cada minuto (para atualizar se mudar de dia)
     setInterval(carregarRegrasConfirmacao, 60000);
     atualizarLista();
-    atualizarUIAdmin();
+    // Verificar validade do token admin antes de mostrar UI admin
+    verificarTokenInicial().then(() => atualizarUIAdmin());
     
     // Event listener para formulário de admin
     const formConfirmaAdmin = document.getElementById('formConfirmaAdmin');
