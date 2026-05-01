@@ -13,13 +13,7 @@ async function carregarRegrasConfirmacao() {
     // Atualizar a mensagem de regras na página
     const msgRegras = document.getElementById('msgRegrasConfirmacao');
     if (msgRegras) {
-      if (data.bloqueado) {
-        msgRegras.innerHTML = `<strong style="color: #c0392b;">⛔ Sistema bloqueado para manutenção no domingo!</strong>`;
-        msgRegras.style.display = 'block';
-      } else if (data.tipoAtivo) {
-        msgRegras.innerHTML = `<strong style="color: #ffd54f;">📅 ${data.diaAtual}: Dia de confirmação para <span style="color: #27ae60;">${data.tipoAtivo.toUpperCase()}S</span></strong>`;
-        msgRegras.style.display = 'block';
-      }
+      msgRegras.style.display = 'none';
     }
   } catch (err) {
     console.error('Erro ao carregar regras:', err);
@@ -125,19 +119,6 @@ document.getElementById('formConfirma').addEventListener('submit', function(e) {
   mensagem.style.color = '#27ae60';
   
   if (!nome || !tipo || !genero) return;
-  
-  // Verificar se este tipo pode confirmar hoje
-  if (regraConfirmacao.bloqueado) {
-    mensagem.textContent = '❌ Sistema bloqueado no domingo. Tente amanhã!';
-    mensagem.style.color = '#c0392b';
-    return;
-  }
-  
-  if (regraConfirmacao.tipoAtivo && tipo !== regraConfirmacao.tipoAtivo) {
-    mensagem.textContent = `❌ Hoje ${regraConfirmacao.diaAtual} é dia de confirmação apenas para ${regraConfirmacao.tipoAtivo === 'mensalista' ? 'MENSALISTAS' : 'AVULSOS'}!`;
-    mensagem.style.color = '#c0392b';
-    return;
-  }
   
   fetch(`/confirmar`, {
     method: 'POST',

@@ -33,7 +33,7 @@
 - [x] Logout com destruição de token
 
 #### 5. **Regras de Confirmação por Dia** ✅
-- [x] Regras diferentes para Terça/Quinta/Sexta
+- [x] Regras diferentes para Terça/Quinta/Sextafc93315f-1e9c-4c5f-8be7-36b17c2cb1edfc93315f-1e9c-4c5f-8be7-36b17c2cb1ed
 - [x] Diferentes tipos (Mensalista/Avulso/Visitante)
 - [x] Horários específicos de abertura
 - [x] Integrado ao frontend dinamicamente

@@ -922,13 +922,7 @@
         // Atualizar a mensagem de regras na página
         const msgRegras = document.getElementById('msgRegrasConfirmacao');
         if (msgRegras) {
-          if (data.bloqueado) {
-            msgRegras.innerHTML = `<strong>⛔ Sistema bloqueado para manutenção no domingo!</strong>`;
-            msgRegras.style.display = 'block';
-          } else if (data.tipoAtivo) {
-            msgRegras.innerHTML = `<strong>📅 ${data.diaAtual}: Dia de confirmação para <span style="color: #34d399;">${data.tipoAtivo.toUpperCase()}S</span></strong>`;
-            msgRegras.style.display = 'block';
-          }
+          msgRegras.style.display = 'none';
         }
       } catch (err) {
         console.error('Erro ao carregar regras:', err);
@@ -943,18 +937,7 @@
       const genero = document.getElementById('genero').value;
       if (!nome || !tipo || !genero) return;
       
-      // Verificar se este tipo pode confirmar hoje
-      if (regraConfirmacao.bloqueado) {
-        mostrarMensagem('❌ Sistema bloqueado no domingo. Tente amanhã!', 'erro');
-        return;
-      }
-      
-      if (regraConfirmacao.tipoAtivo && tipo !== regraConfirmacao.tipoAtivo) {
-        mostrarMensagem(`❌ Hoje ${regraConfirmacao.diaAtual} é dia de confirmação apenas para ${regraConfirmacao.tipoAtivo === 'mensalista' ? 'MENSALISTAS' : 'AVULSOS'}!`, 'erro');
-        return;
-      }
-      
-      try {
+      try:
         const res = await fetch('/confirmar', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
