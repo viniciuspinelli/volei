@@ -937,7 +937,7 @@
       const genero = document.getElementById('genero').value;
       if (!nome || !tipo || !genero) return;
       
-      try:
+      try {
         const res = await fetch('/confirmar', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
